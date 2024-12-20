@@ -1,7 +1,8 @@
 import { WebClient } from '@slack/web-api';
 
-const web = new WebClient(process.env.SLACK_BOT_TOKEN);
+const web = new WebClient(process.env.SLACK_TOKEN);
 const CHANNEL_ID = 'C07HLMDLB1U'; // 送信先のチャンネルID
+console.log('SLACK_TOKEN:', process.env.SLACK_TOKEN);
 
 // 日付のフォーマットを変更
 function getFormattedDate() {
