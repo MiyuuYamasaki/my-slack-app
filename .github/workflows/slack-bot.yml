@@ -21,10 +21,10 @@ jobs:
 
       - name: 依存関係のインストール
         run: npm install
-        working-directory: app/message/sendMessage
+        working-directory: app/message
 
       - name: メッセージ送信
-        run: npm start
-        working-directory: app/message/sendMessage
+        run: node sendMessage.js
+        working-directory: app/message
         env:
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
