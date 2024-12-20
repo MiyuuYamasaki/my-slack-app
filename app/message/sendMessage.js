@@ -1,7 +1,7 @@
 import { WebClient } from '@slack/web-api';
 
 const SLACK_TOKEN = process.env.SLACK_TOKEN;
-const CHANNEL_ID = 'C07HLMDLB1U'; // 送信先のチャンネルID
+const CHANNEL_ID = 'C083QUBKU9L'; // 送信先のチャンネルID
 
 // 日付のフォーマットを変更
 function getFormattedDate() {
@@ -27,9 +27,9 @@ const client = new WebClient(SLACK_TOKEN);
 async function sendSlackMessage(channelId) {
   try {
     const formattedDate = getFormattedDate();
-    await web.chat.postMessage({
+    const result = await client.chat.postMessage({
       channel: channelId,
-      text: `ステータスを選択してください！${formattedDate}`,
+      text: `ステータスを選択してください！${formattedDate}`, // 必須フィールド
       blocks: [
         {
           type: 'section',
@@ -37,75 +37,76 @@ async function sendSlackMessage(channelId) {
             type: 'mrkdwn',
             text: `ステータスを選択してください！${formattedDate}`,
           },
-          accessory: {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: '🏢 本社',
-              emoji: true,
+        },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '🏢 本社',
+                emoji: true,
+              },
+              action_id: 'button_office',
+              value: 'office',
             },
-            action_id: 'button_office',
-            value: 'office',
-          },
-        },
-        {
-          type: 'section',
-          accessory: {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: '🏠 在宅',
-              emoji: true,
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '🏠 在宅',
+                emoji: true,
+              },
+              action_id: 'button_remote',
+              value: 'remote',
             },
-            action_id: 'button_remote',
-            value: 'remote',
-          },
-        },
-        {
-          type: 'section',
-          accessory: {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: '🚗 外出',
-              emoji: true,
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '🚗 外出',
+                emoji: true,
+              },
+              action_id: 'button_outside',
+              value: 'outside',
             },
-            action_id: 'button_outside',
-            value: 'outside',
-          },
-        },
-        {
-          type: 'section',
-          accessory: {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: '🖥️ リモート室',
-              emoji: true,
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '🖥️ リモート室',
+                emoji: true,
+              },
+              action_id: 'button_remoteroom',
+              value: 'remoteroom',
             },
-            action_id: 'button_remoteroom',
-            value: 'remoteroom',
-          },
+          ],
         },
         {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: `📋 一覧`,
-            emoji: true,
-          },
-          action_id: 'button_list',
-          style: 'primary',
-        },
-        {
-          type: 'button',
-          text: {
-            type: 'plain_text',
-            text: `👋 退勤`,
-            emoji: true,
-          },
-          action_id: 'button_goHome',
-          style: 'danger',
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: `📋 一覧`,
+                emoji: true,
+              },
+              action_id: 'button_list',
+              style: 'primary',
+            },
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: `👋 退勤`,
+                emoji: true,
+              },
+              action_id: 'button_goHome',
+              style: 'danger',
+            },
+          ],
         },
       ],
     });
@@ -115,6 +116,4 @@ async function sendSlackMessage(channelId) {
   }
 }
 
-sendSlackMessage('C083QUBKU9L'); // ボタン付きメッセージ送信
-
-// test-chatbot : https://sbs-occ-corp.slack.com/archives/C083QUBKU9L
+sendSlackMessage(CHANNEL_ID); // ボタン付きメッセージ送信
