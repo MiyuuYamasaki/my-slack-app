@@ -1,7 +1,7 @@
-const express = require('express');
-const { WebClient } = require('@slack/web-api');
-const bodyParser = require('body-parser');
-const crypto = require('crypto');
+import express from 'express';
+import { WebClient } from '@slack/web-api';
+import bodyParser from 'body-parser';
+import crypto from 'crypto';
 
 const app = express();
 const port = 3000;
