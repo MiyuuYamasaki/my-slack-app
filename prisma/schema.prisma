@@ -18,4 +18,5 @@ model StatusRecord {
   user_id       String
   selected_status String
   created_at    DateTime @default(now())
+  updated_at    DateTime
 }

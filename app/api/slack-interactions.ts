@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { WebClient } from '@slack/web-api';
 import bodyParser from 'body-parser';
-// import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
@@ -9,7 +9,7 @@ const userClient = new WebClient(userToken);
 const botToken = process.env.BOT_TOKEN;
 const botClient = new WebClient(botToken);
 
-// const prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
 export const config = {
   api: {
@@ -74,7 +74,7 @@ export default async function handler(
         });
 
         // DBにステータスを保存
-        // await upsertStatusRecord(user.username, selectedAction);
+        await upsertStatusRecord(user.username, selectedAction);
 
         res.status(200).send('Status updated');
       } else {
@@ -133,8 +133,8 @@ export async function getUserName(userId: string): Promise<string> {
 // DB操作
 async function upsertStatusRecord(userId: string, selectedStatus: string) {
   try {
-    // レコードが存在するかを確認
-    const existingRecord = await prisma.statusRecord.findFirst({
+    // user_idがユニークならfindUniqueに変更
+    const existingRecord = await prisma.statusRecord.findUnique({
       where: { user_id: userId },
     });
 
@@ -144,7 +144,7 @@ async function upsertStatusRecord(userId: string, selectedStatus: string) {
         where: { id: existingRecord.id },
         data: {
           selected_status: selectedStatus,
-          created_at: new Date(), // 作成日を更新（必要なら）
+          updated_at: new Date(), // ここでupdated_atを更新
         },
       });
       console.log('Record updated:', updatedRecord);
