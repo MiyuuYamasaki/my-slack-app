@@ -11,13 +11,11 @@ model User {
   id            Int              @id @default(autoincrement())
   slack_user_id String           @unique
   name          String
-  statusRecords StatusRecord[]   // 追加: StatusRecordとのリレーション
 }
 
 model StatusRecord {
   id            Int      @id @default(autoincrement())
-  user_id       Int
+  user_id       String
   selected_status String
   created_at    DateTime @default(now())
-  user          User     @relation(fields: [user_id], references: [id])  // 反対側のリレーションを設定
 }
