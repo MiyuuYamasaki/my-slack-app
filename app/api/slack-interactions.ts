@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { WebClient } from '@slack/web-api';
 import bodyParser from 'body-parser';
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
@@ -9,7 +9,7 @@ const userClient = new WebClient(userToken);
 const botToken = process.env.BOT_TOKEN;
 const botClient = new WebClient(botToken);
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 export const config = {
   api: {
@@ -74,7 +74,7 @@ export default async function handler(
         });
 
         // DBにステータスを保存
-        await upsertStatusRecord(user.username, selectedAction);
+        // await upsertStatusRecord(user.username, selectedAction);
 
         res.status(200).send('Status updated');
       } else {
