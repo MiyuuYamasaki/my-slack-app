@@ -1,8 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { WebClient } from '@slack/web-api';
-import bodyParser from 'body-parser';
 
-// Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
 const userClient = new WebClient(userToken);
 const botToken = process.env.BOT_TOKEN;
@@ -14,7 +12,6 @@ export const config = {
   },
 };
 
-// Slackインタラクションのペイロードの型定義
 type SlackInteractionPayload = {
   actions: { name: string; value: string }[];
   user: { id: string; username: string };
@@ -28,14 +25,14 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      const parsedBody = await new Promise<SlackInteractionPayload>(
-        (resolve, reject) => {
-          bodyParser.urlencoded({ extended: true })(req, res, (err) => {
-            if (err) reject(err);
-            resolve(JSON.parse(req.body.payload));
-          });
-        }
-      );
+      const buffer = await new Promise<Buffer>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        req.on('data', (chunk) => chunks.push(chunk));
+        req.on('end', () => resolve(Buffer.concat(chunks)));
+        req.on('error', reject);
+      });
+
+      const parsedBody = JSON.parse(buffer.toString());
 
       const { actions, user, channel, message } = parsedBody;
 
@@ -44,29 +41,26 @@ export default async function handler(
 
         const selectedAction = actions[0].value || '退勤';
 
-        if (selectedAction) {
-          // Stasus用の絵文字を設定
-          let emoji = '';
-          switch (selectedAction) {
-            case 'office':
-              emoji = ':office:';
-              break;
-            case 'remote':
-              emoji = ':house_with_garden:';
-              break;
-            case 'outside':
-              emoji = ':car:';
-              break;
-            case 'remoteroom':
-              emoji = ':desktop_computer:';
-              break;
-          }
-          await updateUserStatus(user.id, selectedAction, emoji); // status更新
-        } else {
-          await updateUserStatus(user.id, '', ''); // statusリセット
+        let emoji = '';
+        switch (selectedAction) {
+          case 'office':
+            emoji = ':office:';
+            break;
+          case 'remote':
+            emoji = ':house_with_garden:';
+            break;
+          case 'outside':
+            emoji = ':car:';
+            break;
+          case 'remoteroom':
+            emoji = ':desktop_computer:';
+            break;
         }
 
-        // ユーザの表示名を取得しスレッドにポスト
+        // ステータス更新
+        await updateUserStatus(user.id, selectedAction, emoji);
+
+        // ユーザの表示名を取得してスレッドにポスト
         const userName = await getUserName(user.id);
         await botClient.chat.postMessage({
           channel: channel.id,
@@ -95,13 +89,22 @@ async function updateUserStatus(
 ) {
   try {
     // statusセットの場合、時刻も設定
-    if (statusText != '' && emoji != '') {
+    if (statusText && emoji) {
+      await userClient.users.profile.set({
+        user: userId,
+        profile: {
+          status_text: statusText,
+          status_emoji: emoji,
+        },
+      });
+
+      // 20時までの時間を計算して、タイマーでリセット
       setTimeout(async () => {
         await userClient.users.profile.set({
           user: userId,
           profile: {
-            status_text: statusText,
-            status_emoji: emoji,
+            status_text: '',
+            status_emoji: '',
           },
         });
       }, getRemainingTimeUntil20h()); // 20時までの時間を計算してセット
@@ -109,8 +112,8 @@ async function updateUserStatus(
       await userClient.users.profile.set({
         user: userId,
         profile: {
-          status_text: statusText,
-          status_emoji: emoji,
+          status_text: '',
+          status_emoji: '',
         },
       });
     }
