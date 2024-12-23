@@ -40,9 +40,9 @@ export default async function handler(
       const { actions, user, channel, message } = parsedBody;
 
       if (actions && actions.length > 0) {
-        console.log('actions:' + actions);
+        console.log('actions:' + JSON.stringify(actions, null, 2));
 
-        const selectedAction = actions[0].value;
+        const selectedAction = actions[0].value || '退勤';
 
         if (selectedAction) {
           // Stasus用の絵文字を設定
@@ -94,13 +94,26 @@ async function updateUserStatus(
   emoji: string
 ) {
   try {
-    await userClient.users.profile.set({
-      user: userId,
-      profile: {
-        status_text: statusText,
-        status_emoji: emoji,
-      },
-    });
+    // statusセットの場合、時刻も設定
+    if (statusText != '' && emoji != '') {
+      setTimeout(async () => {
+        await userClient.users.profile.set({
+          user: userId,
+          profile: {
+            status_text: statusText,
+            status_emoji: emoji,
+          },
+        });
+      }, getRemainingTimeUntil20h()); // 20時までの時間を計算してセット
+    } else {
+      await userClient.users.profile.set({
+        user: userId,
+        profile: {
+          status_text: statusText,
+          status_emoji: emoji,
+        },
+      });
+    }
     console.log('Status updated:', userId);
   } catch (error) {
     console.error('Error updating status:', error);
@@ -126,4 +139,18 @@ export async function getUserName(userId: string): Promise<string> {
     console.error('Error fetching user name:', error);
     throw new Error('Failed to fetch user name');
   }
+}
+
+// 20時までの残り時間をミリ秒で計算
+function getRemainingTimeUntil20h(): number {
+  const now = new Date();
+  const targetTime = new Date();
+  targetTime.setHours(20, 0, 0, 0); // 20時00分
+
+  if (now > targetTime) {
+    // 今日の20時を過ぎている場合は、明日の20時までの時間を計算
+    targetTime.setDate(targetTime.getDate() + 1);
+  }
+
+  return targetTime.getTime() - now.getTime();
 }
