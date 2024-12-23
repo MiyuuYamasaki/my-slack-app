@@ -8,6 +8,8 @@ const SLACK_TOKEN = process.env.SLACK_TOKEN || '';
 
 const web = new WebClient(SLACK_TOKEN);
 
+console.log('SLACK_TOKEN:' + SLACK_TOKEN);
+
 const verifySlackRequest = (req: NextApiRequest): boolean => {
   const slackSignature = req.headers['x-slack-signature'] as string;
   const slackTimestamp = req.headers['x-slack-request-timestamp'] as string;
@@ -41,6 +43,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const payload = JSON.parse(req.body.payload); // Slackのペイロードを取得
     const userId = payload.user.id; // ユーザーID
     const action = payload.actions[0].value; // ボタンで送信された値
+
+    await web.chat.postMessage({
+      channel: payload.channel.id,
+      thread_ts: payload.message.ts,
+      text: `${userId}さん、おはようございます。`,
+    });
+
+    console.log('userId:' + userId);
 
     // Slackのステータスを更新
     await web.users.profile.set({
