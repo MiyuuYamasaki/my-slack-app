@@ -11,5 +11,10 @@
       "src": "/api/slack-interactions",
       "dest": "/app/api/slack-interactions.ts"
     }
-  ]
+  ],
+  "build": {
+    "env": {
+      "PRISMA_GENERATE_COMMAND": "npx prisma generate"
+    }
+  }
 }
