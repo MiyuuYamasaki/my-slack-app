@@ -75,6 +75,7 @@ export default async function handler(
 
         // DBにステータスを保存
         await upsertStatusRecord(user.username, selectedAction);
+        console.log(prisma);
 
         res.status(200).send('Status updated');
       } else {
@@ -136,17 +137,17 @@ async function upsertStatusRecord(userId: string, selectedStatus: string) {
     // user_id で検索するために StatusRecordWhereInput を使用
     const existingRecord = await prisma.statusRecord.findFirst({
       where: {
-        user_id: userId,  // user_id による検索
+        user_id: userId, // user_id による検索
       },
     });
 
     if (existingRecord) {
       // レコードが存在する場合は更新
       const updatedRecord = await prisma.statusRecord.update({
-        where: { id: existingRecord.id },  // 更新には id が必要
+        where: { id: existingRecord.id }, // 更新には id が必要
         data: {
           selected_status: selectedStatus,
-          updated_at: new Date(),  // 更新日を設定
+          updated_at: new Date(), // 更新日を設定
         },
       });
       console.log('Record updated:', updatedRecord);
