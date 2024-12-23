@@ -42,7 +42,7 @@ export default async function handler(
       if (actions && actions.length > 0) {
         console.log('actions:' + JSON.stringify(actions, null, 2));
 
-        const selectedAction = actions[0].value;
+        const selectedAction = actions[0].value || '';
 
         // Stasus用の絵文字を設定
         let emoji = '';
