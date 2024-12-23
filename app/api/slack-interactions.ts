@@ -147,7 +147,7 @@ async function upsertStatusRecord(userId: string, selectedStatus: string) {
         where: { id: existingRecord.id }, // 更新には id が必要
         data: {
           selected_status: selectedStatus,
-          updated_at: new Date(), // 更新日を設定
+          // updated_at は Prisma が自動で更新するので設定しない
         },
       });
       console.log('Record updated:', updatedRecord);
