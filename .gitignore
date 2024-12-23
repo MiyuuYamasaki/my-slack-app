@@ -1,9 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-# /node_modules
-# Add an exception for .prisma folder in node_modules
-!node_modules/.prisma/
+/node_modules
 /.pnp
 .pnp.*
 .yarn/*

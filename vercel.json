@@ -6,6 +6,11 @@
       "use": "@vercel/node"
     }
   ],
+  "build": {
+    "env": {
+      "PRISMA_GENERATE_COMMAND": "npx prisma generate"
+    }
+  },
   "routes": [
     {
       "src": "/api/slack-interactions",
