@@ -55,7 +55,7 @@ async function sendSlackMessage(channelId) {
               type: 'button',
               text: {
                 type: 'plain_text',
-                text: '🏠 在宅',
+                text: '🏡 在宅',
                 emoji: true,
               },
               action_id: 'button_remote',
