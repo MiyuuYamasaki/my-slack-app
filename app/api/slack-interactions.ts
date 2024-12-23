@@ -73,9 +73,9 @@ export default async function handler(
 
         const payload = JSON.parse(req.body.payload); // Slackのpayloadを解析
         let userName;
-        getUserName(user.id).then((name) => {
-          userName = name;
-        });
+        (async () => {
+          userName = await getUserName(user.id);
+        })();
 
         await botClient.chat.postMessage({
           channel: payload.channel.id,
@@ -116,24 +116,23 @@ async function updateUserStatus(
   }
 }
 
-async function getUserName(userId: string): Promise<string> {
+export async function getUserName(userId: string): Promise<string> {
   try {
-    const response = await botClient.users.info({ user: userId });
+    const result = await slackClient.users.info({ user: userId });
 
-    if (response.ok && response.user) {
-      const profile = response.user.profile as {
+    if (result.user) {
+      const profile = result.user.profile as {
         real_name?: string;
         display_name?: string;
       };
 
-      // display_name を優先し、存在しない場合は real_name を返す
+      // `display_name` が存在する場合は優先、なければ `real_name` を返す
       return profile.display_name || profile.real_name || 'Unknown User';
-    } else {
-      console.error('Failed to fetch user info:', response.error);
-      return 'Unknown User';
     }
+
+    return 'Unknown User';
   } catch (error) {
     console.error('Error fetching user name:', error);
-    return 'Unknown User';
+    throw new Error('Failed to fetch user name');
   }
 }
