@@ -42,7 +42,7 @@ export default async function handler(
       if (actions && actions.length > 0) {
         console.log('actions:' + JSON.stringify(actions, null, 2));
 
-        const selectedAction = actions[0].value || '退勤';
+        const selectedAction = actions[0].value;
 
         // Stasus用の絵文字を設定
         let emoji = '';
@@ -64,11 +64,14 @@ export default async function handler(
 
         // ユーザの表示名を取得しスレッドにポスト
         const userName = await getUserName(user.id);
-        await botClient.chat.postMessage({
-          channel: channel.id,
-          thread_ts: message.ts,
-          text: `${userName}さんが${selectedAction}を選択しました！`,
-        });
+        if (selectedAction) {
+          // Value設定する
+          await botClient.chat.postMessage({
+            channel: channel.id,
+            thread_ts: message.ts,
+            text: `${userName}さんが${selectedAction}を選択しました！`,
+          });
+        }
 
         res.status(200).send('Status updated');
       } else {
