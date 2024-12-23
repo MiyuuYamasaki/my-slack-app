@@ -1,13 +1,21 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { WebClient } from '@slack/web-api';
+import bodyParser from 'body-parser';
 
 // Slackのトークンを環境変数から取得
 const slackToken = process.env.SLACK_TOKEN;
 const slackClient = new WebClient(slackToken);
 
+// Slackインタラクションのペイロードの型定義
 type SlackInteractionPayload = {
   actions: { name: string; value: string }[];
   user: { id: string };
+};
+
+export const config = {
+  api: {
+    bodyParser: false, // デフォルトのbodyParserを無効にしてカスタムで処理
+  },
 };
 
 export default async function handler(
@@ -16,11 +24,18 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      // ここではJSON.parseを外し、req.bodyが既に解析されているものと仮定
-      const payload: SlackInteractionPayload = req.body; // 直接 body を使用
+      // リクエストボディをurlencodedとして解析
+      const parsedBody = await new Promise<SlackInteractionPayload>(
+        (resolve, reject) => {
+          bodyParser.urlencoded({ extended: true })(req, res, (err) => {
+            if (err) reject(err);
+            resolve(JSON.parse(req.body.payload)); // Slackから送られてくるデータは "payload" フィールドに含まれる
+          });
+        }
+      );
 
       // ボタンが押されたときの処理
-      const { actions, user } = payload;
+      const { actions, user } = parsedBody;
       if (actions && actions.length > 0) {
         const selectedAction = actions[0].value;
         await updateUserStatus(user.id, selectedAction, ':smile:');
