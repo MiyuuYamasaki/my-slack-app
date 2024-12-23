@@ -6,8 +6,6 @@ import bodyParser from 'body-parser';
 const slackToken = process.env.SLACK_TOKEN;
 const slackClient = new WebClient(slackToken);
 
-console.log('SLACK_TOKEN:', slackToken);
-
 slackClient.auth
   .test()
   .then((response) => {
@@ -49,7 +47,30 @@ export default async function handler(
       const { actions, user } = parsedBody;
       if (actions && actions.length > 0) {
         const selectedAction = actions[0].value;
-        await updateUserStatus(user.id, selectedAction, ':smile:');
+        let emoji = '';
+        switch (selectedAction) {
+          case '本社勤務':
+            emoji = '🏢';
+            break;
+          case '在宅勤務':
+            emoji = '🏠';
+            break;
+          case '外出中':
+            emoji = '🚗';
+            break;
+          case 'リモート室':
+            emoji = '🖥️';
+            break;
+        }
+        await updateUserStatus(user.id, selectedAction, emoji);
+
+        const payload = JSON.parse(req.body.payload); // Slackのpayloadを解析
+
+        await slackClient.chat.postMessage({
+          channel: payload.channel.id,
+          thread_ts: payload.message.ts,
+          text: `${user.id}さんが${selectedAction}を選択しました！`,
+        });
         res.status(200).send('Status updated');
       } else {
         res.status(400).send('No actions found');
