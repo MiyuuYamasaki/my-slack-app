@@ -6,6 +6,17 @@ import bodyParser from 'body-parser';
 const slackToken = process.env.SLACK_TOKEN;
 const slackClient = new WebClient(slackToken);
 
+console.log('SLACK_TOKEN:', slackToken);
+
+slackClient.auth
+  .test()
+  .then((response) => {
+    console.log('Token is valid:', response);
+  })
+  .catch((error) => {
+    console.error('Error testing token:', error);
+  });
+
 // Slackインタラクションのペイロードの型定義
 type SlackInteractionPayload = {
   actions: { name: string; value: string }[];
