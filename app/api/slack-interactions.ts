@@ -100,7 +100,7 @@ async function updateUserStatus(
 ) {
   try {
     // statusセットの場合、時刻も設定
-    if (statusText && emoji) {
+    if (emoji) {
       await userClient.users.profile.set({
         user: userId,
         profile: {
@@ -110,15 +110,16 @@ async function updateUserStatus(
       });
 
       // 20時までの時間を計算して、タイマーでリセット
-      setTimeout(async () => {
-        await userClient.users.profile.set({
-          user: userId,
-          profile: {
-            status_text: '',
-            status_emoji: '',
-          },
-        });
-      }, getRemainingTimeUntil20h()); // 20時までの時間を計算してセット
+      // setTimeout(async () => {
+      await userClient.users.profile.set({
+        user: userId,
+        profile: {
+          status_text: '',
+          status_emoji: '',
+          status_expiration: '1734942588',
+        },
+      });
+      // }, getRemainingTimeUntil20h()); // 20時までの時間を計算してセット
     } else {
       await userClient.users.profile.set({
         user: userId,
