@@ -108,18 +108,6 @@ async function updateUserStatus(
           status_emoji: emoji,
         },
       });
-
-      // 20時までの時間を計算して、タイマーでリセット
-      // setTimeout(async () => {
-      await userClient.users.profile.set({
-        user: userId,
-        profile: {
-          status_text: '',
-          status_emoji: '',
-          status_expiration: '1734942588',
-        },
-      });
-      // }, getRemainingTimeUntil20h()); // 20時までの時間を計算してセット
     } else {
       await userClient.users.profile.set({
         user: userId,
@@ -154,18 +142,4 @@ export async function getUserName(userId: string): Promise<string> {
     console.error('Error fetching user name:', error);
     throw new Error('Failed to fetch user name');
   }
-}
-
-// 20時までの残り時間をミリ秒で計算
-function getRemainingTimeUntil20h(): number {
-  const now = new Date();
-  const targetTime = new Date();
-  targetTime.setHours(20, 0, 0, 0); // 20時00分
-
-  if (now > targetTime) {
-    // 今日の20時を過ぎている場合は、明日の20時までの時間を計算
-    targetTime.setDate(targetTime.getDate() + 1);
-  }
-
-  return targetTime.getTime() - now.getTime();
 }
