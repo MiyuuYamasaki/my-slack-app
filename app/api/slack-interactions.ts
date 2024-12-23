@@ -17,16 +17,18 @@ slackClient.auth
     console.error('Error testing token:', error);
   });
 
-// Slackインタラクションのペイロードの型定義
-type SlackInteractionPayload = {
-  actions: { name: string; value: string }[];
-  user: { id: string };
-};
-
 export const config = {
   api: {
     bodyParser: false, // デフォルトのbodyParserを無効にしてカスタムで処理
   },
+};
+
+// Slackインタラクションのペイロードの型定義
+type SlackInteractionPayload = {
+  actions: { name: string; value: string }[];
+  user: { id: string };
+  channel: { id: string };
+  message: { ts: string };
 };
 
 export default async function handler(
@@ -35,20 +37,20 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      // リクエストボディをurlencodedとして解析
       const parsedBody = await new Promise<SlackInteractionPayload>(
         (resolve, reject) => {
           bodyParser.urlencoded({ extended: true })(req, res, (err) => {
             if (err) reject(err);
-            resolve(JSON.parse(req.body.payload)); // Slackから送られてくるデータは "payload" フィールドに含まれる
+            resolve(JSON.parse(req.body.payload));
           });
         }
       );
 
-      // ボタンが押されたときの処理
-      const { actions, user } = parsedBody;
+      const { actions, user, channel, message } = parsedBody;
+
       if (actions && actions.length > 0) {
         const selectedAction = actions[0].value;
+
         let emoji = '';
         switch (selectedAction) {
           case 'office':
@@ -67,19 +69,14 @@ export default async function handler(
 
         console.log('Selected action:', selectedAction);
         console.log('Assigned emoji:', emoji);
-        console.log('User object:', JSON.stringify(user, null, 2));
 
         await updateUserStatus(user.id, selectedAction, emoji);
 
-        const payload = JSON.parse(req.body.payload); // Slackのpayloadを解析
-        let userName;
-        (async () => {
-          userName = await getUserName(user.id);
-        })();
+        const userName = await getUserName(user.id);
 
         await botClient.chat.postMessage({
-          channel: payload.channel.id,
-          thread_ts: payload.message.ts,
+          channel: channel.id,
+          thread_ts: message.ts,
           text: `${userName}さんが${selectedAction}を選択しました！`,
         });
 
@@ -126,7 +123,6 @@ export async function getUserName(userId: string): Promise<string> {
         display_name?: string;
       };
 
-      // `display_name` が存在する場合は優先、なければ `real_name` を返す
       return profile.display_name || profile.real_name || 'Unknown User';
     }
 
