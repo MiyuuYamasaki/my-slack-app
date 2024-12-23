@@ -1,21 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { WebClient } from '@slack/web-api';
 import bodyParser from 'body-parser';
+import { PrismaClient } from '@prisma/client';
 
 // Slackのトークンを環境変数から取得
-const slackToken = process.env.SLACK_TOKEN;
-const slackClient = new WebClient(slackToken);
+const userToken = process.env.SLACK_TOKEN;
+const userClient = new WebClient(userToken);
 const botToken = process.env.BOT_TOKEN;
 const botClient = new WebClient(botToken);
 
-slackClient.auth
-  .test()
-  .then((response) => {
-    console.log('Token is valid:', response);
-  })
-  .catch((error) => {
-    console.error('Error testing token:', error);
-  });
+const prisma = new PrismaClient();
 
 export const config = {
   api: {
@@ -26,7 +20,7 @@ export const config = {
 // Slackインタラクションのペイロードの型定義
 type SlackInteractionPayload = {
   actions: { name: string; value: string }[];
-  user: { id: string };
+  user: { id: string; username: string };
   channel: { id: string };
   message: { ts: string };
 };
@@ -49,8 +43,11 @@ export default async function handler(
       const { actions, user, channel, message } = parsedBody;
 
       if (actions && actions.length > 0) {
+        console.log('actions:' + actions);
+
         const selectedAction = actions[0].value;
 
+        // Stasus用の絵文字を設定
         let emoji = '';
         switch (selectedAction) {
           case 'office':
@@ -66,19 +63,18 @@ export default async function handler(
             emoji = ':desktop_computer:';
             break;
         }
+        await updateUserStatus(user.id, selectedAction, emoji); // status更新
 
-        console.log('Selected action:', selectedAction);
-        console.log('Assigned emoji:', emoji);
-
-        await updateUserStatus(user.id, selectedAction, emoji);
-
+        // ユーザの表示名を取得しスレッドにポスト
         const userName = await getUserName(user.id);
-
         await botClient.chat.postMessage({
           channel: channel.id,
           thread_ts: message.ts,
           text: `${userName}さんが${selectedAction}を選択しました！`,
         });
+
+        // DBにステータスを保存
+        await upsertStatusRecord(user.username, selectedAction);
 
         res.status(200).send('Status updated');
       } else {
@@ -100,7 +96,7 @@ async function updateUserStatus(
   emoji: string
 ) {
   try {
-    await slackClient.users.profile.set({
+    await userClient.users.profile.set({
       user: userId,
       profile: {
         status_text: statusText,
@@ -113,9 +109,10 @@ async function updateUserStatus(
   }
 }
 
+// ユーザの表示名を取得する関数
 export async function getUserName(userId: string): Promise<string> {
   try {
-    const result = await slackClient.users.info({ user: userId });
+    const result = await userClient.users.info({ user: userId });
 
     if (result.user) {
       const profile = result.user.profile as {
@@ -130,5 +127,38 @@ export async function getUserName(userId: string): Promise<string> {
   } catch (error) {
     console.error('Error fetching user name:', error);
     throw new Error('Failed to fetch user name');
+  }
+}
+
+// DB操作
+async function upsertStatusRecord(userId: string, selectedStatus: string) {
+  try {
+    // レコードが存在するかを確認
+    const existingRecord = await prisma.statusRecord.findFirst({
+      where: { user_id: userId },
+    });
+
+    if (existingRecord) {
+      // レコードが存在する場合は更新
+      const updatedRecord = await prisma.statusRecord.update({
+        where: { id: existingRecord.id },
+        data: {
+          selected_status: selectedStatus,
+          created_at: new Date(), // 作成日を更新（必要なら）
+        },
+      });
+      console.log('Record updated:', updatedRecord);
+    } else {
+      // レコードが存在しない場合は新規作成
+      const newRecord = await prisma.statusRecord.create({
+        data: {
+          user_id: userId,
+          selected_status: selectedStatus,
+        },
+      });
+      console.log('New record created:', newRecord);
+    }
+  } catch (error) {
+    console.error('Error in upserting status record:', error);
   }
 }
