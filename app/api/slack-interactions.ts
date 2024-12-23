@@ -118,7 +118,7 @@ async function updateUserStatus(
 
 async function getUserName(userId: string): Promise<string> {
   try {
-    const response = await slackClient.users.info({ user: userId });
+    const response = await botClient.users.info({ user: userId });
 
     if (response.ok && response.user) {
       const profile = response.user.profile as {
