@@ -72,11 +72,15 @@ export default async function handler(
         await updateUserStatus(user.id, selectedAction, emoji);
 
         const payload = JSON.parse(req.body.payload); // Slackのpayloadを解析
+        let userName;
+        getUserName(user.id).then((name) => {
+          userName = name;
+        });
 
         await botClient.chat.postMessage({
           channel: payload.channel.id,
           thread_ts: payload.message.ts,
-          text: `${user.id}さんが${selectedAction}を選択しました！`,
+          text: `${userName}さんが${selectedAction}を選択しました！`,
         });
 
         res.status(200).send('Status updated');
@@ -109,5 +113,27 @@ async function updateUserStatus(
     console.log('Status updated:', userId);
   } catch (error) {
     console.error('Error updating status:', error);
+  }
+}
+
+async function getUserName(userId: string): Promise<string> {
+  try {
+    const response = await slackClient.users.info({ user: userId });
+
+    if (response.ok && response.user) {
+      const profile = response.user.profile as {
+        real_name?: string;
+        display_name?: string;
+      };
+
+      // display_name を優先し、存在しない場合は real_name を返す
+      return profile.display_name || profile.real_name || 'Unknown User';
+    } else {
+      console.error('Failed to fetch user info:', response.error);
+      return 'Unknown User';
+    }
+  } catch (error) {
+    console.error('Error fetching user name:', error);
+    return 'Unknown User';
   }
 }
