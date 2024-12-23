@@ -1,12 +1,22 @@
+import { NextApiRequest, NextApiResponse } from 'next';
 import { WebClient } from '@slack/web-api';
 
+// Slackのトークンを環境変数から取得
 const slackToken = process.env.SLACK_TOKEN;
 const slackClient = new WebClient(slackToken);
 
-export default async function handler(req, res) {
+type SlackInteractionPayload = {
+  actions: { name: string, value: string }[],
+  user: { id: string },
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method === 'POST') {
     try {
-      const payload = JSON.parse(req.body);
+      const payload: SlackInteractionPayload = JSON.parse(req.body);
 
       // ボタンが押されたときの処理
       const { actions, user } = payload;
@@ -27,7 +37,11 @@ export default async function handler(req, res) {
 }
 
 // ユーザーのステータスを更新する関数
-async function updateUserStatus(userId, statusText, emoji) {
+async function updateUserStatus(
+  userId: string,
+  statusText: string,
+  emoji: string
+) {
   try {
     await slackClient.users.profile.set({
       user: userId,
