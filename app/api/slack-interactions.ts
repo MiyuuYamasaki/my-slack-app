@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { WebClient } from '@slack/web-api';
+import bodyParser from 'body-parser';
 
+// Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
 const userClient = new WebClient(userToken);
 const botToken = process.env.BOT_TOKEN;
@@ -12,6 +14,7 @@ export const config = {
   },
 };
 
+// Slackインタラクションのペイロードの型定義
 type SlackInteractionPayload = {
   actions: { name: string; value: string }[];
   user: { id: string; username: string };
@@ -25,54 +28,42 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      // リクエストボディを手動で処理
-      const buffer = await new Promise<Buffer>((resolve, reject) => {
-        const chunks: Buffer[] = [];
-        req.on('data', (chunk) => chunks.push(chunk));
-        req.on('end', () => resolve(Buffer.concat(chunks)));
-        req.on('error', reject);
-      });
-
-      // URLエンコードされたpayloadをデコードしてJSONに変換
-      const bodyString = buffer.toString();
-      const payload = new URLSearchParams(bodyString).get('payload');
-      if (!payload) {
-        throw new Error('Payload not found');
-      }
-
-      const parsedBody: SlackInteractionPayload = JSON.parse(payload);
+      const parsedBody = await new Promise<SlackInteractionPayload>(
+        (resolve, reject) => {
+          bodyParser.urlencoded({ extended: true })(req, res, (err) => {
+            if (err) reject(err);
+            resolve(JSON.parse(req.body.payload));
+          });
+        }
+      );
 
       const { actions, user, channel, message } = parsedBody;
 
       if (actions && actions.length > 0) {
         console.log('actions:' + JSON.stringify(actions, null, 2));
 
-        let selectedAction = actions[0].value || '';
+        const selectedAction = actions[0].value || '退勤';
 
+        // Stasus用の絵文字を設定
         let emoji = '';
-        if (!selectedAction) {
-          switch (selectedAction) {
-            case 'office':
-              emoji = ':office:';
-              break;
-            case 'remote':
-              emoji = ':house_with_garden:';
-              break;
-            case 'outside':
-              emoji = ':car:';
-              break;
-            case 'remoteroom':
-              emoji = ':desktop_computer:';
-              break;
-          }
+        switch (selectedAction) {
+          case 'office':
+            emoji = ':office:';
+            break;
+          case 'remote':
+            emoji = ':house_with_garden:';
+            break;
+          case 'outside':
+            emoji = ':car:';
+            break;
+          case 'remoteroom':
+            emoji = ':desktop_computer:';
+            break;
         }
+        await updateUserStatus(user.id, selectedAction, emoji); // status更新
 
-        // ステータス更新
-        await updateUserStatus(user.id, selectedAction, emoji);
-
-        // ユーザの表示名を取得してスレッドにポスト
+        // ユーザの表示名を取得しスレッドにポスト
         const userName = await getUserName(user.id);
-        if (!selectedAction) selectedAction = '退勤';
         await botClient.chat.postMessage({
           channel: channel.id,
           thread_ts: message.ts,
@@ -99,24 +90,13 @@ async function updateUserStatus(
   emoji: string
 ) {
   try {
-    // statusセットの場合、時刻も設定
-    if (emoji) {
-      await userClient.users.profile.set({
-        user: userId,
-        profile: {
-          status_text: statusText,
-          status_emoji: emoji,
-        },
-      });
-    } else {
-      await userClient.users.profile.set({
-        user: userId,
-        profile: {
-          status_text: '',
-          status_emoji: '',
-        },
-      });
-    }
+    await userClient.users.profile.set({
+      user: userId,
+      profile: {
+        status_text: statusText,
+        status_emoji: emoji,
+      },
+    });
     console.log('Status updated:', userId);
   } catch (error) {
     console.error('Error updating status:', error);
