@@ -25,6 +25,7 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
+      // リクエストボディを手動で処理
       const buffer = await new Promise<Buffer>((resolve, reject) => {
         const chunks: Buffer[] = [];
         req.on('data', (chunk) => chunks.push(chunk));
@@ -32,29 +33,38 @@ export default async function handler(
         req.on('error', reject);
       });
 
-      const parsedBody = JSON.parse(buffer.toString());
+      // URLエンコードされたpayloadをデコードしてJSONに変換
+      const bodyString = buffer.toString();
+      const payload = new URLSearchParams(bodyString).get('payload');
+      if (!payload) {
+        throw new Error('Payload not found');
+      }
+
+      const parsedBody: SlackInteractionPayload = JSON.parse(payload);
 
       const { actions, user, channel, message } = parsedBody;
 
       if (actions && actions.length > 0) {
         console.log('actions:' + JSON.stringify(actions, null, 2));
 
-        const selectedAction = actions[0].value || '退勤';
+        let selectedAction = actions[0].value || '';
 
         let emoji = '';
-        switch (selectedAction) {
-          case 'office':
-            emoji = ':office:';
-            break;
-          case 'remote':
-            emoji = ':house_with_garden:';
-            break;
-          case 'outside':
-            emoji = ':car:';
-            break;
-          case 'remoteroom':
-            emoji = ':desktop_computer:';
-            break;
+        if (!selectedAction) {
+          switch (selectedAction) {
+            case 'office':
+              emoji = ':office:';
+              break;
+            case 'remote':
+              emoji = ':house_with_garden:';
+              break;
+            case 'outside':
+              emoji = ':car:';
+              break;
+            case 'remoteroom':
+              emoji = ':desktop_computer:';
+              break;
+          }
         }
 
         // ステータス更新
@@ -62,6 +72,7 @@ export default async function handler(
 
         // ユーザの表示名を取得してスレッドにポスト
         const userName = await getUserName(user.id);
+        if (!selectedAction) selectedAction = '退勤';
         await botClient.chat.postMessage({
           channel: channel.id,
           thread_ts: message.ts,
