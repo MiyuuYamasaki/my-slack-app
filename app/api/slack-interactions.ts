@@ -67,7 +67,7 @@ export default async function handler(
 
         console.log('Selected action:', selectedAction);
         console.log('Assigned emoji:', emoji);
-        console.log('user:' + user);
+        console.log('User object:', JSON.stringify(user, null, 2));
 
         await updateUserStatus(user.id, selectedAction, emoji);
 
