@@ -51,16 +51,16 @@ export default async function handler(
         const selectedAction = actions[0].value;
         let emoji = '';
         switch (selectedAction) {
-          case '本社勤務':
+          case 'office':
             emoji = ':office:';
             break;
-          case '在宅勤務':
+          case 'remote':
             emoji = ':house_with_garden:';
             break;
-          case '外出中':
+          case 'outside':
             emoji = ':car:';
             break;
-          case 'リモート室':
+          case 'remoteroom':
             emoji = ':desktop_computer:';
             break;
         }
