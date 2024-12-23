@@ -133,18 +133,20 @@ export async function getUserName(userId: string): Promise<string> {
 // DB操作
 async function upsertStatusRecord(userId: string, selectedStatus: string) {
   try {
-    // user_idがユニークならfindUniqueに変更
-    const existingRecord = await prisma.statusRecord.findUnique({
-      where: { user_id: userId },
+    // user_id で検索するために StatusRecordWhereInput を使用
+    const existingRecord = await prisma.statusRecord.findFirst({
+      where: {
+        user_id: userId,  // user_id による検索
+      },
     });
 
     if (existingRecord) {
       // レコードが存在する場合は更新
       const updatedRecord = await prisma.statusRecord.update({
-        where: { id: existingRecord.id },
+        where: { id: existingRecord.id },  // 更新には id が必要
         data: {
           selected_status: selectedStatus,
-          updated_at: new Date(), // ここでupdated_atを更新
+          updated_at: new Date(),  // 更新日を設定
         },
       });
       console.log('Record updated:', updatedRecord);
