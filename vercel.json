@@ -15,6 +15,9 @@
   "build": {
     "env": {
       "PRISMA_GENERATE_COMMAND": "npx prisma generate"
+    },
+    "commands": {
+      "build": "next build && npx prisma generate"
     }
   }
 }
