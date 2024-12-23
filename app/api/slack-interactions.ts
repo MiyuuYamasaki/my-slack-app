@@ -44,23 +44,27 @@ export default async function handler(
 
         const selectedAction = actions[0].value;
 
-        // Stasus用の絵文字を設定
-        let emoji = '';
-        switch (selectedAction) {
-          case 'office':
-            emoji = ':office:';
-            break;
-          case 'remote':
-            emoji = ':house_with_garden:';
-            break;
-          case 'outside':
-            emoji = ':car:';
-            break;
-          case 'remoteroom':
-            emoji = ':desktop_computer:';
-            break;
+        if (selectedAction) {
+          // Stasus用の絵文字を設定
+          let emoji = '';
+          switch (selectedAction) {
+            case 'office':
+              emoji = ':office:';
+              break;
+            case 'remote':
+              emoji = ':house_with_garden:';
+              break;
+            case 'outside':
+              emoji = ':car:';
+              break;
+            case 'remoteroom':
+              emoji = ':desktop_computer:';
+              break;
+          }
+          await updateUserStatus(user.id, selectedAction, emoji); // status更新
+        } else {
+          await updateUserStatus(user.id, '', ''); // statusリセット
         }
-        await updateUserStatus(user.id, selectedAction, emoji); // status更新
 
         // ユーザの表示名を取得しスレッドにポスト
         const userName = await getUserName(user.id);
