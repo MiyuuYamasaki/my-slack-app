@@ -6,8 +6,8 @@ const slackToken = process.env.SLACK_TOKEN;
 const slackClient = new WebClient(slackToken);
 
 type SlackInteractionPayload = {
-  actions: { name: string, value: string }[],
-  user: { id: string },
+  actions: { name: string; value: string }[];
+  user: { id: string };
 };
 
 export default async function handler(
@@ -16,7 +16,8 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      const payload: SlackInteractionPayload = JSON.parse(req.body);
+      // ここではJSON.parseを外し、req.bodyが既に解析されているものと仮定
+      const payload: SlackInteractionPayload = req.body; // 直接 body を使用
 
       // ボタンが押されたときの処理
       const { actions, user } = payload;
