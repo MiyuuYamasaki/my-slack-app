@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "app/api/slack-interactions.js",
+      "src": "app/api/slack-interactions.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/slack-interactions",
-      "dest": "/app/api/slack-interactions.js"
+      "dest": "/app/api/slack-interactions.ts"
     }
   ]
 }
