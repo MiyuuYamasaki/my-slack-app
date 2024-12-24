@@ -99,12 +99,15 @@ async function updateUserStatus(
   emoji: string
 ) {
   try {
+    const timestamp = getTodayAt8PM();
+    console.log(timestamp);
+
     await userClient.users.profile.set({
       user: userId,
       profile: {
         status_text: statusText,
         status_emoji: emoji,
-        status_expiration: emoji ? 1735000200 : '',
+        status_expiration: emoji ? timestamp : '',
       },
     });
     console.log('Status updated:', userId);
@@ -133,3 +136,9 @@ export async function getUserName(userId: string): Promise<string> {
     throw new Error('Failed to fetch user name');
   }
 }
+
+const getTodayAt8PM = (): number => {
+  const now = new Date();
+  now.setHours(20, 0, 0, 0); // 当日の20時に設定
+  return now.getTime(); // タイムスタンプを返す
+};
