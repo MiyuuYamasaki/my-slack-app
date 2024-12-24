@@ -55,7 +55,6 @@ export default async function handler(
 
         await userClient.chat.postMessage({
           channel: channel.id,
-          thread_ts: message.ts,
           text: `/status :house_with_garden: remote`,
         });
 
@@ -86,7 +85,7 @@ export default async function handler(
         const timestamp = getTodayAt8PMJST();
         console.log(timestamp);
 
-        await updateUserStatus(user.id, selectedAction, emoji, timestamp); // status更新
+        // await updateUserStatus(user.id, selectedAction, emoji, timestamp); // status更新
 
         res.status(200).send('Status updated');
       } else {
