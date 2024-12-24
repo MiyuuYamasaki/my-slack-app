@@ -100,7 +100,7 @@ async function updateUserStatus(
   userId: string,
   statusText: string,
   emoji: string,
-  timestamp: string
+  timestamp: number
 ) {
   try {
     await userClient.users.profile.set({
