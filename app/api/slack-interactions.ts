@@ -108,7 +108,7 @@ async function updateUserStatus(
       profile: {
         status_text: statusText,
         status_emoji: emoji,
-        status_expiration: emoji ? timestamp : '',
+        status_expiration: emoji ? 1735070400000 : '',
       },
     });
     console.log('Status updated:', userId);
