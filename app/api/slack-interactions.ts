@@ -53,6 +53,10 @@ export default async function handler(
           text: `${userName}さんが${selectedAction}を選択しました！`,
         });
 
+        console.log('User ID:', user.id);
+        const userInfo = await userClient.users.info({ user: 'U07HCB8DDHD' });
+        console.log(userInfo);
+
         // Stasus用の絵文字を設定
         let emoji = '';
         switch (selectedAction) {
