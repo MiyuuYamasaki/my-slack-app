@@ -53,6 +53,12 @@ export default async function handler(
           text: `${userName}さんが${selectedAction}を選択しました！`,
         });
 
+        await userClient.chat.postMessage({
+          channel: channel.id,
+          thread_ts: message.ts,
+          text: `/status :house_with_garden: remote`,
+        });
+
         console.log('User ID:', user.id);
         const userInfo = await userClient.users.info({ user: user.id });
         console.log(userInfo);
@@ -147,5 +153,7 @@ const getTodayAt8PMJST = (): number => {
   // JSTに合わせるために、UTCから9時間進める
   const jstOffset = 9 * 60; // JSTはUTCより9時間進んでいる
   now.setMinutes(now.getMinutes() + jstOffset);
-  return now.getTime(); // タイムスタンプを返す
+
+  // ミリ秒単位を秒単位に変換して返す
+  return Math.floor(now.getTime() / 1000); // 秒単位に変換
 };
