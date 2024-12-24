@@ -53,10 +53,10 @@ export default async function handler(
           text: `${userName}さんが${selectedAction}を選択しました！`,
         });
 
-        await userClient.chat.postMessage({
-          channel: channel.id,
-          text: `/status :house_with_garden: remote`,
-        });
+        // await userClient.chat.postMessage({
+        //   channel: channel.id,
+        //   text: `/status :house_with_garden: remote`,
+        // });
 
         console.log('User ID:', user.id);
         const userInfo = await userClient.users.info({ user: user.id });
@@ -85,7 +85,7 @@ export default async function handler(
         const timestamp = getTodayAt8PMJST();
         console.log(timestamp);
 
-        // await updateUserStatus(user.id, selectedAction, emoji, timestamp); // status更新
+        await updateUserStatus(user.id, selectedAction, emoji, timestamp); // status更新
 
         res.status(200).send('Status updated');
       } else {
@@ -108,7 +108,7 @@ async function updateUserStatus(
   timestamp: number
 ) {
   try {
-    const statusExpiration = emoji ? 1735038000 : 0; // emojiが空でなければtimestamp、そうでなければ0を設定
+    const statusExpiration = emoji ? timestamp : 0; // emojiが空でなければtimestamp、そうでなければ0を設定
 
     await userClient.users.profile.set({
       user: userId,
