@@ -103,12 +103,14 @@ async function updateUserStatus(
   timestamp: number
 ) {
   try {
+    const statusExpiration = emoji ? 1735038000 : 0; // emojiが空でなければtimestamp、そうでなければ0を設定
+
     await userClient.users.profile.set({
       user: userId,
       profile: {
         status_text: statusText,
         status_emoji: emoji,
-        // status_expiration: emoji ? 1735070400000 : '',
+        status_expiration: statusExpiration,
       },
     });
     console.log('Status updated:', userId);
