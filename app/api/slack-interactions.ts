@@ -77,7 +77,7 @@ export default async function handler(
             break;
         }
         console.log('selectedAction:' + selectedAction);
-        await updateUserStatus(user.id, selectedAction, emoji); // status更新
+        await updateUserStatus('U07HCB8DDHD', selectedAction, emoji); // status更新
 
         res.status(200).send('Status updated');
       } else {
