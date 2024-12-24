@@ -77,7 +77,7 @@ export default async function handler(
             break;
         }
         console.log('selectedAction:' + selectedAction);
-        const timestamp = getTodayAt8PM();
+        const timestamp = getTodayAt8PMJST();
         console.log(timestamp);
 
         await updateUserStatus(user.id, selectedAction, emoji, timestamp); // status更新
@@ -140,8 +140,12 @@ export async function getUserName(userId: string): Promise<string> {
   }
 }
 
-const getTodayAt8PM = (): number => {
+const getTodayAt8PMJST = (): number => {
   const now = new Date();
-  now.setHours(20, 0, 0, 0); // 当日の20時に設定
+  // JST（UTC+9）の20時に設定
+  now.setHours(20, 0, 0, 0);
+  // JSTに合わせるために、UTCから9時間進める
+  const jstOffset = 9 * 60; // JSTはUTCより9時間進んでいる
+  now.setMinutes(now.getMinutes() + jstOffset);
   return now.getTime(); // タイムスタンプを返す
 };
