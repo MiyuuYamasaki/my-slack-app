@@ -42,39 +42,38 @@ export default async function handler(
       if (actions && actions.length > 0) {
         console.log('actions:' + JSON.stringify(actions, null, 2));
 
-        const selectedAction = actions[0].value;
+        let selectedAction = actions[0].value;
+
+        // ユーザの表示名を取得しスレッドにポスト
+        const userName = await getUserName(user.id);
+        // Value設定する
+        await botClient.chat.postMessage({
+          channel: channel.id,
+          thread_ts: message.ts,
+          text: `${userName}さんが${selectedAction}を選択しました！`,
+        });
 
         // Stasus用の絵文字を設定
         let emoji = '';
         switch (selectedAction) {
-          case 'office':
+          case '本社勤務':
             emoji = ':office:';
             break;
-          case 'remote':
+          case '在宅勤務':
             emoji = ':house_with_garden:';
             break;
-          case 'outside':
+          case '外出中':
             emoji = ':car:';
             break;
-          case 'remoteroom':
+          case 'リモート室':
             emoji = ':desktop_computer:';
+            break;
+          case '退勤':
+            selectedAction = '';
             break;
         }
         console.log('selectedAction:' + selectedAction);
-
-        // ユーザの表示名を取得しスレッドにポスト
-        const userName = await getUserName(user.id);
-        if (selectedAction) {
-          await updateUserStatus(user.id, selectedAction, emoji); // status更新
-          // Value設定する
-          await botClient.chat.postMessage({
-            channel: channel.id,
-            thread_ts: message.ts,
-            text: `${userName}さんが${selectedAction}を選択しました！`,
-          });
-        } else {
-          await updateUserStatus(user.id, '', ''); // status更新
-        }
+        await updateUserStatus(user.id, selectedAction, emoji); // status更新
 
         res.status(200).send('Status updated');
       } else {
@@ -101,6 +100,7 @@ async function updateUserStatus(
       profile: {
         status_text: statusText,
         status_emoji: emoji,
+        status_expiration: emoji ? 1735000200 : '',
       },
     });
     console.log('Status updated:', userId);

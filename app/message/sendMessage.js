@@ -49,7 +49,7 @@ async function sendSlackMessage(channelId) {
                 emoji: true,
               },
               action_id: 'button_office',
-              value: 'office',
+              value: '本社勤務',
             },
             {
               type: 'button',
@@ -59,7 +59,7 @@ async function sendSlackMessage(channelId) {
                 emoji: true,
               },
               action_id: 'button_remote',
-              value: 'remote',
+              value: '在宅勤務',
             },
             {
               type: 'button',
@@ -69,7 +69,7 @@ async function sendSlackMessage(channelId) {
                 emoji: true,
               },
               action_id: 'button_outside',
-              value: 'outside',
+              value: '外出中',
             },
             {
               type: 'button',
@@ -79,7 +79,7 @@ async function sendSlackMessage(channelId) {
                 emoji: true,
               },
               action_id: 'button_remoteroom',
-              value: 'remoteroom',
+              value: 'リモート室',
             },
           ],
         },
@@ -105,6 +105,7 @@ async function sendSlackMessage(channelId) {
               },
               action_id: 'button_goHome',
               style: 'danger',
+              value: '退勤',
             },
           ],
         },
