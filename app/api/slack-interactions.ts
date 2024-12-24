@@ -77,7 +77,10 @@ export default async function handler(
             break;
         }
         console.log('selectedAction:' + selectedAction);
-        await updateUserStatus(user.id, selectedAction, emoji); // status更新
+        const timestamp = getTodayAt8PM();
+        console.log(timestamp);
+
+        await updateUserStatus(user.id, selectedAction, emoji, timestamp); // status更新
 
         res.status(200).send('Status updated');
       } else {
@@ -96,12 +99,10 @@ export default async function handler(
 async function updateUserStatus(
   userId: string,
   statusText: string,
-  emoji: string
+  emoji: string,
+  timestamp: string
 ) {
   try {
-    const timestamp = getTodayAt8PM();
-    console.log(timestamp);
-
     await userClient.users.profile.set({
       user: userId,
       profile: {
