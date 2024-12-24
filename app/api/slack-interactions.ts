@@ -54,7 +54,7 @@ export default async function handler(
         });
 
         console.log('User ID:', user.id);
-        const userInfo = await userClient.users.info({ user: 'U07HCB8DDHD' });
+        const userInfo = await userClient.users.info({ user: user.id });
         console.log(userInfo);
 
         // Stasus用の絵文字を設定
@@ -77,7 +77,7 @@ export default async function handler(
             break;
         }
         console.log('selectedAction:' + selectedAction);
-        await updateUserStatus('U07HCB8DDHD', selectedAction, emoji); // status更新
+        await updateUserStatus(user.id, selectedAction, emoji); // status更新
 
         res.status(200).send('Status updated');
       } else {
