@@ -10,14 +10,16 @@ generator client {
 model User {
   id            Int              @id @default(autoincrement())
   slack_user_id String           @unique
-  name          String
+  token         String
+  Record        StatusRecord[]   // 関連テーブルへのリレーション
 }
 
 model StatusRecord {
-  id            Int      @id @default(autoincrement())
-  user_id       String?
-  selected_status String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  ymd             DateTime // 日付を記録するカラム
+  user_id         String   // Userテーブルのslack_user_idを参照
+  selected_status String   // 選択したステータス
+  leave_Check     Int      // 出退勤の確認用フラグ
+  channel_id      String   // チャンネルID
+  User            User     @relation(fields: [user_id], references: [slack_user_id]) // 外部キーのリレーション
 }
-
