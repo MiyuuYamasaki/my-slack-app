@@ -1,5 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
+import { use } from 'react';
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
@@ -21,21 +22,20 @@ export default async function handler(
     try {
       const parsedBody = JSON.parse(req.body.payload);
       const { actions, user, channel, message, trigger_id } = parsedBody;
-      console.log('triggerId:', trigger_id);
 
       if (actions && actions.length > 0) {
-        console.log('actions:', JSON.stringify(actions, null, 2));
-
         let selectedAction = actions[0].value;
 
-        const userName = await getUserName(user.id);
-        await botClient.chat.postMessage({
-          channel: channel.id,
-          thread_ts: message.ts,
-          text: `${userName}さんが${selectedAction}を選択しました！`,
-        });
-
         if (selectedAction) {
+          // ユーザが選択したボタンをスレッドへ返信
+          const userName = await getUserName(user.id);
+          await botClient.chat.postMessage({
+            channel: channel.id,
+            thread_ts: message.ts,
+            text: `${userName}さんが${selectedAction}を選択しました！`,
+          });
+
+          // Statusに反映する絵文字をセット
           let emoji = '';
           switch (selectedAction) {
             case '本社勤務':
@@ -54,16 +54,34 @@ export default async function handler(
               selectedAction = '';
               break;
           }
+
+          // 20:00までのタイムスタンプを取得
           const timestamp = getTodayAt8PMJST();
+
+          // SStatusを更新
           await updateUserStatus(user.id, selectedAction, emoji, timestamp);
         } else {
+          // 一覧を表示
+          // チャンネルメンバーを取得
           const membersResponse = await botClient.conversations.members({
             channel: channel.id,
           });
           const members = membersResponse.members || [];
+
+          // メンバー情報を取得してBotを除外
+          const filteredMembers: string[] = [];
+          for (const memberId of members) {
+            const userInfo = await botClient.users.info({ user: memberId });
+            console.log(members);
+            if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
+              filteredMembers.push(memberId);
+            }
+          }
+
+          // モーダルを表示
           await botClient.views.open({
-            trigger_id,
-            view: createModal(members),
+            trigger_id: trigger_id,
+            view: createModal(filteredMembers),
           });
         }
 
@@ -88,7 +106,7 @@ async function updateUserStatus(
   timestamp: number
 ) {
   try {
-    const statusExpiration = emoji ? 1735038000 : 0; // emojiが空でなければtimestamp、そうでなければ0を設定
+    const statusExpiration = emoji ? 1735124400 : 0; // emojiが空でなければtimestamp、そうでなければ0を設定
 
     await userClient.users.profile.set({
       user: userId,
