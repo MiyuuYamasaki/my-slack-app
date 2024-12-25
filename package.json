@@ -26,8 +26,7 @@
   },
   "scripts": {
     "dev": "next dev --turbo",
-    "prisma:generate": "prisma generate",
-    "build": "npm run prisma:generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   }
