@@ -1,19 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
-// import { PrismaClient } from '@prisma/client';
-// const prisma = new PrismaClient();
-
-import { PrismaClient } from '@prisma/client';
-
-// Vercelなどのサーバーレス環境では、PrismaClientのインスタンスをグローバルに保持するのが推奨されます
-const prisma = global.prisma || new PrismaClient();
-
-// サーバーレス環境では再利用されるように設定
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
-}
-
-export { prisma };
+import { supabase } from './lib/supabase';
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
@@ -148,24 +135,28 @@ async function updateUserStatus(
 }
 
 // Record更新
-// async function create(
-//   user_id: string,
-//   work_style: string,
-//   leave_check: number,
-//   channel_id: string
-// ) {
-//   // Recordを作成
-//   const record = await prisma.statusRecord.create({
-//     data: {
-//       ymd: new Date(),
-//       user_id: user_id,
-//       selected_status: work_style,
-//       leave_check: leave_check,
-//       channel_id: channel_id,
-//     },
-//   });
-//   console.log('Record created:', record);
-// }
+async function createRecord(
+  workStyle: string,
+  leaveCheck: number,
+  channelId: string,
+  userId: string
+) {
+  const { data, error } = await supabase.from('records').insert([
+    {
+      ymd: new Date().toISOString().split('T')[0], // 日付フォーマット
+      selected_status: workStyle,
+      leave_check: leaveCheck,
+      channel_id: channelId,
+      user_id: userId,
+    },
+  ]);
+
+  if (error) {
+    console.error('Error creating record:', error);
+  } else {
+    console.log('Record created:', data);
+  }
+}
 
 // async function update(id: number, work_style: string, leave_check: number) {
 //   const updatedStatRecord = await prisma.statusRecord.update({
