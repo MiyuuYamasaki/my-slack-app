@@ -59,10 +59,20 @@ export default async function handler(
 
           // 20:00までのタイムスタンプを取得
           const timestamp = getTodayAt8PMJST();
+          const dates = 0; // new/upd判断用何か作る
+          const records = await prisma.statusRecord.findMany({
+            where: { user_id: user.id }, // Slack user_id で検索
+            include: { User: true }, // 関連するUser情報も取得（存在すれば含まれる）
+          });
+          console.log(records);
 
           // SStatusを更新
           await updateUserStatus(user.id, selectedAction, emoji, timestamp);
-          await update(user.id, selectedAction, 0, channel.id);
+          if (dates === 0) {
+            await create(user.id, selectedAction, 0, channel.id);
+          } else {
+            // update(recordId, selectedAction, 1);
+          }
         } else {
           // 一覧を表示
           // チャンネルメンバーを取得
@@ -126,7 +136,7 @@ async function updateUserStatus(
 }
 
 // Record更新
-async function update(
+async function create(
   user_id: string,
   work_style: string,
   leave_check: number,
@@ -138,11 +148,22 @@ async function update(
       ymd: new Date(),
       user_id: user_id,
       selected_status: work_style,
-      leave_Check: leave_check,
+      leave_check: leave_check,
       channel_id: channel_id,
     },
   });
   console.log('Record created:', record);
+}
+
+async function update(id: number, work_style: string, leave_check: number) {
+  const updatedStatRecord = await prisma.statusRecord.update({
+    where: { id: id }, // レコードIDを指定
+    data: {
+      selected_status: work_style,
+      leave_check: leave_check,
+    },
+  });
+  console.log('Record updated:', updatedStatRecord);
 }
 
 // ユーザの表示名を取得する関数
