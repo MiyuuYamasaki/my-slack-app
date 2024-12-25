@@ -1,6 +1,8 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { use } from 'react';
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
@@ -60,6 +62,7 @@ export default async function handler(
 
           // SStatusを更新
           await updateUserStatus(user.id, selectedAction, emoji, timestamp);
+          await update(user.id, selectedAction, 0, channel.id);
         } else {
           // 一覧を表示
           // チャンネルメンバーを取得
@@ -120,6 +123,26 @@ async function updateUserStatus(
   } catch (error) {
     console.error('Error updating status:', error);
   }
+}
+
+// Record更新
+async function update(
+  user_id: string,
+  work_style: string,
+  leave_check: number,
+  channel_id: string
+) {
+  // Recordを作成
+  const record = await prisma.record.create({
+    data: {
+      ymd: new Date(),
+      user_id: user_id,
+      selected_status: work_style,
+      leave_Check: leave_check,
+      channel_id: channel_id,
+    },
+  });
+  console.log('Record created:', record);
 }
 
 // ユーザの表示名を取得する関数
