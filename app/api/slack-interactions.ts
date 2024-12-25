@@ -1,7 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { use } from 'react';
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Slackのトークンを環境変数から取得
@@ -61,10 +60,9 @@ export default async function handler(
           const timestamp = getTodayAt8PMJST();
           const dates = 0; // new/upd判断用何か作る
           const records = await prisma.statusRecord.findMany({
-            where: { user_id: user.id }, // Slack user_id で検索
-            include: { User: true }, // 関連するUser情報も取得（存在すれば含まれる）
+            where: { user_id: user.id },
           });
-          console.log(records);
+          console.log('Found records:', records);
 
           // SStatusを更新
           await updateUserStatus(user.id, selectedAction, emoji, timestamp);
@@ -85,11 +83,11 @@ export default async function handler(
           const filteredMembers: string[] = [];
           for (const memberId of members) {
             const userInfo = await botClient.users.info({ user: memberId });
-            console.log(members);
             if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
               filteredMembers.push(memberId);
             }
           }
+          console.log(members);
 
           // モーダルを表示
           await botClient.views.open({
@@ -104,7 +102,9 @@ export default async function handler(
       }
     } catch (error) {
       console.error('Error processing Slack interaction:', error);
-      res.status(500).send('Internal Server Error');
+      res.status(500).json({
+        message: 'Internal Server Error' + error,
+      });
     }
   } else {
     res.status(405).send('Method Not Allowed');
@@ -143,7 +143,7 @@ async function create(
   channel_id: string
 ) {
   // Recordを作成
-  const record = await prisma.record.create({
+  const record = await prisma.statusRecord.create({
     data: {
       ymd: new Date(),
       user_id: user_id,
