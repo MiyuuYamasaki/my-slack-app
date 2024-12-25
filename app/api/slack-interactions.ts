@@ -59,18 +59,18 @@ export default async function handler(
           // 20:00までのタイムスタンプを取得
           const timestamp = getTodayAt8PMJST();
           const dates = 0; // new/upd判断用何か作る
-          const records = await prisma.statusRecord.findMany({
-            where: { user_id: user.id },
-          });
-          console.log('Found records:', records);
+          // const records = await prisma.statusRecord.findMany({
+          //   where: { user_id: user.id },
+          // });
+          // console.log('Found records:', records);
 
           // SStatusを更新
           await updateUserStatus(user.id, selectedAction, emoji, timestamp);
-          if (dates === 0) {
-            await create(user.id, selectedAction, 0, channel.id);
-          } else {
-            // update(recordId, selectedAction, 1);
-          }
+          // if (dates === 0) {
+          //   await create(user.id, selectedAction, 0, channel.id);
+          // } else {
+          //   update(recordId, selectedAction, 1);
+          // }
         } else {
           // 一覧を表示
           // チャンネルメンバーを取得
@@ -136,35 +136,35 @@ async function updateUserStatus(
 }
 
 // Record更新
-async function create(
-  user_id: string,
-  work_style: string,
-  leave_check: number,
-  channel_id: string
-) {
-  // Recordを作成
-  const record = await prisma.statusRecord.create({
-    data: {
-      ymd: new Date(),
-      user_id: user_id,
-      selected_status: work_style,
-      leave_check: leave_check,
-      channel_id: channel_id,
-    },
-  });
-  console.log('Record created:', record);
-}
+// async function create(
+//   user_id: string,
+//   work_style: string,
+//   leave_check: number,
+//   channel_id: string
+// ) {
+//   // Recordを作成
+//   const record = await prisma.statusRecord.create({
+//     data: {
+//       ymd: new Date(),
+//       user_id: user_id,
+//       selected_status: work_style,
+//       leave_check: leave_check,
+//       channel_id: channel_id,
+//     },
+//   });
+//   console.log('Record created:', record);
+// }
 
-async function update(id: number, work_style: string, leave_check: number) {
-  const updatedStatRecord = await prisma.statusRecord.update({
-    where: { id: id }, // レコードIDを指定
-    data: {
-      selected_status: work_style,
-      leave_check: leave_check,
-    },
-  });
-  console.log('Record updated:', updatedStatRecord);
-}
+// async function update(id: number, work_style: string, leave_check: number) {
+//   const updatedStatRecord = await prisma.statusRecord.update({
+//     where: { id: id }, // レコードIDを指定
+//     data: {
+//       selected_status: work_style,
+//       leave_check: leave_check,
+//     },
+//   });
+//   console.log('Record updated:', updatedStatRecord);
+// }
 
 // ユーザの表示名を取得する関数
 export async function getUserName(userId: string): Promise<string> {
