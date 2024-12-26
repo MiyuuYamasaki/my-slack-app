@@ -31,7 +31,7 @@ export default async function handler(
         let selectedAction = actions[0].value;
         console.log('selectedAction:' + selectedAction);
 
-        if (selectedAction === 'oa') {
+        if (selectedAction === 'OA認証') {
           console.log('oaだよ!');
         } else {
           // ユーザトークンを取得
@@ -43,7 +43,8 @@ export default async function handler(
 
           // ユーザがトークンを取得していない場合ステータス変更なし
           if (!isStatus) {
-            let responseText = `@${user.id}\nOA認証されていないため、ステータス変更ができません。認証しますか？`;
+            let responseText = `@${user.name}\nOA認証されていないため、ステータス変更ができません。認証しますか？`;
+            console.log(user);
             botClient.chat.postMessage({
               channel: channel.id,
               text: responseText,
@@ -67,7 +68,7 @@ export default async function handler(
                       },
                       action_id: 'button_add',
                       style: 'primary',
-                      value: 'oA',
+                      value: 'OA認証',
                     },
                   ],
                 },
