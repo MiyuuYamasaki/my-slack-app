@@ -21,8 +21,5 @@
       "src": "/api/slack-interactions",
       "dest": "/app/api/slack-interactions.ts"
     }
-  ],
-  "hooks": {
-    "build": "prisma generate"
-  }
+  ]
 }
