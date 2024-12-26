@@ -1,6 +1,7 @@
 import { WebClient, ModalView } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
+import { use } from 'react';
 
 const prisma = new PrismaClient();
 
@@ -23,26 +24,27 @@ export default async function handler(
     try {
       const parsedBody = JSON.parse(req.body.payload);
       const { actions, user, channel, message, trigger_id } = parsedBody;
+      console.log(actions);
 
       if (actions && actions.length > 0) {
         const tasks = [];
 
         let selectedAction = actions[0].value;
         console.log('selectedAction:' + selectedAction);
-        console.log(JSON.stringify(message.text, null, 2));
 
         if (selectedAction === 'OA認証') {
           // 正規表現を使って「@」の後に続くユーザー名を抽出
           let messageUser = message.text.match(/@([a-zA-Z0-9-_]+)/);
           messageUser = messageUser[1]; // @を除外したユーザー名
-
           const isUser = messageUser === user.name;
-          console.log(messageUser + ':' + isUser);
+          console.log(
+            messageUser + ':' + user.name + '=' + isUser ? 'match' : 'unMatch'
+          );
 
           // モーダルウィンドウを開く
           await botClient.views.open({
             trigger_id: trigger_id,
-            view: createUserModal(isUser),
+            view: createUserModal(isUser, user.name),
           });
         } else if (selectedAction != undefined) {
           // ユーザトークンを取得
@@ -79,6 +81,21 @@ export default async function handler(
                       action_id: 'button_add',
                       style: 'primary',
                       value: 'OA認証',
+                    },
+                  ],
+                },
+                {
+                  type: 'actions',
+                  elements: [
+                    {
+                      type: 'button',
+                      text: {
+                        type: 'plain_text',
+                        text: '今後表示しない',
+                        emoji: true,
+                      },
+                      action_id: 'button_none',
+                      value: 'NONE',
                     },
                   ],
                 },
@@ -129,7 +146,7 @@ export default async function handler(
                 // Statusを更新
                 await updateUserStatus(
                   userClient,
-                  user.id,
+                  user.name,
                   selectedAction,
                   emoji,
                   timestamp
@@ -151,7 +168,7 @@ export default async function handler(
 
               // Recordを更新
               await upsertRecord(
-                user.id,
+                user.name,
                 formattedDate,
                 channel.id,
                 selectedAction
@@ -189,7 +206,18 @@ export default async function handler(
         }
         res.status(200).send('Status updated');
       } else {
-        res.status(400).send('No actions found');
+        try {
+          // モーダルから入力された値を取得
+          const token =
+            parsedBody.view.state.values.token_block.token_input.value;
+          const userId =
+            parsedBody.view.state.values.user_id_block.user_id_input.value;
+          console.log('token:' + token);
+          console.log('userId:' + userId);
+          res.status(200).send('Token updated');
+        } catch (error) {
+          res.status(400).send('No actions found');
+        }
       }
     } catch (error) {
       console.error('Error processing Slack interaction:', error);
@@ -365,7 +393,7 @@ const createModal = (members: string[]) => {
 };
 
 // OA認証用のモーダルを作成する関数
-const createUserModal = (isUser: boolean): ModalView => {
+const createUserModal = (isUser: boolean, user_id: string): ModalView => {
   if (isUser) {
     // ユーザーの場合のモーダル
     return {
@@ -383,6 +411,34 @@ const createUserModal = (isUser: boolean): ModalView => {
           },
         },
         {
+          type: 'section',
+          block_id: 'user_id_block',
+          text: {
+            type: 'mrkdwn',
+            text: '*User Id*',
+          },
+          accessory: {
+            type: 'static_select',
+            action_id: 'user_id_input',
+            initial_option: {
+              text: {
+                type: 'plain_text',
+                text: 'user_id', // 初期値を設定
+              },
+              value: 'user_id',
+            },
+            options: [
+              {
+                text: {
+                  type: 'plain_text',
+                  text: 'user_id', // ユーザーが変更できない選択肢
+                },
+                value: 'user_id',
+              },
+            ],
+          },
+        },
+        {
           type: 'input',
           block_id: 'token_block',
           element: {
@@ -395,7 +451,7 @@ const createUserModal = (isUser: boolean): ModalView => {
           },
           label: {
             type: 'plain_text',
-            text: 'User OAuth Token',
+            text: '*User OAuth Token*',
           },
         },
       ],
