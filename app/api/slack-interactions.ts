@@ -29,6 +29,7 @@ export default async function handler(
 
         let selectedAction = actions[0].value;
         console.log('selectedAction:' + selectedAction);
+        console.log('message:' + message);
 
         if (selectedAction === 'OA認証') {
           const modalView: ModalView = {
