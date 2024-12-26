@@ -8,10 +8,10 @@ datasource db {
 }
 
 model user {
-  id            Int      @id @default(autoincrement())
-  slack_user_id String   @unique
-  token         String?
-  records       record[]
+  id             Int      @id @default(autoincrement())
+  slack_user_id  String   @unique
+  token          String?
+  records        record[]
 }
 
 model record {
