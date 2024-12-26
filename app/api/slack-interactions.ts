@@ -29,13 +29,13 @@ export default async function handler(
 
         let selectedAction = actions[0].value;
         console.log('selectedAction:' + selectedAction);
-        console.log(JSON.stringify(message, null, 2));
+        console.log(JSON.stringify(message.text, null, 2));
 
         if (selectedAction === 'OA認証') {
           // 正規表現を使って「@」の後に続くユーザー名を抽出
-          const messageUser = message.match(/@([a-zA-Z0-9-_]+)/);
+          const messageUser = message.text.match(/@([a-zA-Z0-9-_]+)/);
           const isUser = messageUser === user.name;
-          console.log('isUser:' + isUser);
+          console.log(messageUser + ':' + isUser);
 
           // モーダルウィンドウを開く
           await botClient.views.open({
