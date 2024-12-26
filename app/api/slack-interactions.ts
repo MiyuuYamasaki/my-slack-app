@@ -59,11 +59,14 @@ export default async function handler(
 
           // 20:00までのタイムスタンプを取得
           const timestamp = getTodayAt8PMJST();
+          const ymd = new Date();
+          // 日本時間に合わせる（UTC + 9 時間）
+          ymd.setHours(ymd.getHours() + 9);
 
           // Statusを更新
           await updateUserStatus(user.id, selectedAction, emoji, timestamp);
           // Recordを更新
-          await upsertRecord(user.id, '2024-12-26', channel.id, selectedAction);
+          await upsertRecord(user.id, ymd, channel.id, selectedAction);
         } else {
           // 一覧を表示
           // チャンネルメンバーを取得
@@ -131,7 +134,7 @@ async function updateUserStatus(
 // record操作
 async function upsertRecord(
   userId: string,
-  selectedDate: string,
+  ymd: Date,
   channelId: string,
   selectedStatus: string
 ) {
@@ -140,7 +143,7 @@ async function upsertRecord(
     const existingRecord = await prisma.record.findFirst({
       where: {
         user_id: userId,
-        ymd: selectedDate,
+        ymd: ymd,
         channel_id: channelId,
       },
     });
@@ -152,7 +155,7 @@ async function upsertRecord(
       await prisma.record.create({
         data: {
           user_id: userId,
-          ymd: selectedDate,
+          ymd: ymd,
           selected_status: selectedStatus,
           channel_id: channelId,
         },
