@@ -28,16 +28,14 @@ export default async function handler(
       if (actions && actions.length > 0) {
         const tasks = [];
 
+        let selectedAction = actions[0].value;
+
         // ユーザトークンを取得
         const defaultUserToken = process.env.SLACK_TOKEN;
         const userToken =
           (await getTokenByUserId(user.id)) || process.env.SLACK_TOKEN;
         const userClient = new WebClient(userToken);
-        let isStatus = defaultUserToken === userToken;
-
-        console.log('defaultUserToken:' + defaultUserToken);
-        console.log('userToken:' + userToken);
-        console.log('isStatus:' + isStatus);
+        let isStatus = defaultUserToken != userToken;
 
         // ユーザがトークンを取得していない場合ステータス変更なし
         if (!isStatus) {
@@ -48,8 +46,6 @@ export default async function handler(
             text: resMessage,
           });
         }
-
-        let selectedAction = actions[0].value;
 
         if (selectedAction) {
           tasks.push(
