@@ -2,6 +2,7 @@ import { WebClient, ModalView } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import { use } from 'react';
+import { Result } from 'postcss';
 
 const prisma = new PrismaClient();
 
@@ -56,9 +57,10 @@ export default async function handler(
 
           // ユーザがトークンを取得していない場合ステータス変更なし
           if (isStatus) {
-            let responseText = `@${user.name}\nOA認証されていないため、ステータス変更ができません。認証しますか？`;
-            botClient.chat.postMessage({
+            let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
+            botClient.chat.postEphemeral({
               channel: channel.id,
+              user: user.id,
               text: responseText,
               blocks: [
                 {
@@ -82,11 +84,6 @@ export default async function handler(
                       style: 'primary',
                       value: 'OA認証',
                     },
-                  ],
-                },
-                {
-                  type: 'actions',
-                  elements: [
                     {
                       type: 'button',
                       text: {
@@ -211,11 +208,14 @@ export default async function handler(
           const token =
             parsedBody.view.state.values.token_block.token_input.value;
           console.log('token:' + token + ' user:' + user.name);
-          await insertToken(user.name, token);
-          await botClient.chat.update({
-            channel: channel.id,
-            ts: message.ts, // 'message.ts' が既存のメッセージのタイムスタンプ
-            text: `@${user.name}\nOA認証に成功しました！`,
+          const result = await insertToken(user.name, token);
+
+          // 成功ならTOKEN追加のメッセージを削除
+          if (result) await deleteEphemeralMessage(channel.id, message.ts);
+          // モーダルを表示
+          await botClient.views.open({
+            trigger_id: trigger_id,
+            view: openTokenModal(result),
           });
 
           res.status(200).send('Token updated');
@@ -314,7 +314,10 @@ async function upsertRecord(
 }
 
 // user操作
-async function insertToken(slackUserId: string, Token: string) {
+async function insertToken(
+  slackUserId: string,
+  Token: string
+): Promise<boolean> {
   try {
     await prisma.user.create({
       data: {
@@ -322,8 +325,10 @@ async function insertToken(slackUserId: string, Token: string) {
         token: Token,
       },
     });
+    return true; // 挿入成功時は true を返す
   } catch (error) {
     console.error('Error processing user:', error);
+    return false; // 挿入失敗時は false を返す
   }
 }
 
@@ -395,7 +400,8 @@ const createUserModal = (isUser: boolean, user_id: string): ModalView => {
   if (isUser) {
     // ユーザーの場合のモーダル
     return {
-      type: 'modal', // ここで "modal" を明示的に指定
+      type: 'modal',
+      callback_id: 'modal_oa_auth',
       title: {
         type: 'plain_text',
         text: 'OA認証',
@@ -457,4 +463,54 @@ const createUserModal = (isUser: boolean, user_id: string): ModalView => {
       ],
     };
   }
+};
+
+const openTokenModal = (insertResult: boolean): ModalView => {
+  if (insertResult) {
+    // ユーザーの場合のモーダル
+    return {
+      type: 'modal',
+      title: {
+        type: 'plain_text',
+        text: 'お知らせ',
+        emoji: true,
+      },
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: 'OA認証に成功しました。\nボタンクリック時にステータスが変わらない場合、管理者へお問い合わせください。',
+          },
+        },
+      ],
+    };
+  } else {
+    // エラーモーダル
+    return {
+      type: 'modal',
+      title: {
+        type: 'plain_text',
+        text: 'エラー 😢',
+        emoji: true,
+      },
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: 'DB更新に失敗しました。\n管理者へお問い合わせください。',
+          },
+        },
+      ],
+    };
+  }
+};
+
+// メッセージを削除する関数
+const deleteEphemeralMessage = async (channelId: string, messageTs: string) => {
+  await botClient.chat.delete({
+    channel: channelId,
+    ts: messageTs, // メッセージのタイムスタンプ
+  });
 };
