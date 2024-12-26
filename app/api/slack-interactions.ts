@@ -2,6 +2,9 @@ import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 // import { supabase } from './lib/supabase';
 
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Anon Key:', supabaseAnonKey);
+
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
 const userClient = new WebClient(userToken);
