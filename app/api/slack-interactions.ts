@@ -1,6 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from './lib/supabase';
+// import { supabase } from './lib/supabase';
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
@@ -135,28 +135,28 @@ async function updateUserStatus(
 }
 
 // Record更新
-async function createRecord(
-  workStyle: string,
-  leaveCheck: number,
-  channelId: string,
-  userId: string
-) {
-  const { data, error } = await supabase.from('records').insert([
-    {
-      ymd: new Date().toISOString().split('T')[0], // 日付フォーマット
-      selected_status: workStyle,
-      leave_check: leaveCheck,
-      channel_id: channelId,
-      user_id: userId,
-    },
-  ]);
+// async function createRecord(
+//   workStyle: string,
+//   leaveCheck: number,
+//   channelId: string,
+//   userId: string
+// ) {
+//   const { data, error } = await supabase.from('records').insert([
+//     {
+//       ymd: new Date().toISOString().split('T')[0], // 日付フォーマット
+//       selected_status: workStyle,
+//       leave_check: leaveCheck,
+//       channel_id: channelId,
+//       user_id: userId,
+//     },
+//   ]);
 
-  if (error) {
-    console.error('Error creating record:', error);
-  } else {
-    console.log('Record created:', data);
-  }
-}
+//   if (error) {
+//     console.error('Error creating record:', error);
+//   } else {
+//     console.log('Record created:', data);
+//   }
+// }
 
 // async function update(id: number, work_style: string, leave_check: number) {
 //   const updatedStatRecord = await prisma.statusRecord.update({
