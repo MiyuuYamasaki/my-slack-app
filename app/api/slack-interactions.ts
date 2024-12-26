@@ -1,17 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-async function initializePrisma() {
-  try {
-    const { PrismaClient } = await import('@prisma/client'); // 動的インポート
-    const prisma = new PrismaClient();
-    console.log('Prisma initialized');
-    return prisma;
-  } catch (error) {
-    console.error('Error initializing Prisma:', error);
-  }
-}
-
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
 const userClient = new WebClient(userToken);
@@ -30,7 +19,15 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      initializePrisma();
+      try {
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        console.log('Prisma initialized');
+        // 他の処理
+      } catch (error) {
+        console.error('Error initializing Prisma:', error);
+        res.status(500).json({ message: 'Internal server error', error });
+      }
 
       const parsedBody = JSON.parse(req.body.payload);
       const { actions, user, channel, message, trigger_id } = parsedBody;
