@@ -35,6 +35,10 @@ export default async function handler(
         const userClient = new WebClient(userToken);
         let isStatus = defaultUserToken === userToken;
 
+        console.log('defaultUserToken:' + defaultUserToken);
+        console.log('userToken:' + userToken);
+        console.log('isStatus:' + isStatus);
+
         // ユーザがトークンを取得していない場合ステータス変更なし
         if (!isStatus) {
           let resMessage = `OA認証されていないため、ステータス変更ができません。認証しますか？`;
@@ -164,7 +168,7 @@ async function getTokenByUserId(userId: string) {
     },
   });
 
-  return userRecord ? userRecord.token : undefined;
+  return userRecord ? userRecord.token : process.env.SLACK_TOKEN;
 }
 
 // ユーザーのステータスを更新する関数
