@@ -29,118 +29,145 @@ export default async function handler(
         const tasks = [];
 
         let selectedAction = actions[0].value;
+        console.log('selectedAction:' + selectedAction);
 
-        // ユーザトークンを取得
-        const defaultUserToken = process.env.SLACK_TOKEN;
-        const userToken =
-          (await getTokenByUserId(user.id)) || process.env.SLACK_TOKEN;
-        const userClient = new WebClient(userToken);
-        let isStatus = defaultUserToken != userToken;
+        if (selectedAction === 'oa') {
+          console.log('oaだよ!');
+        } else {
+          // ユーザトークンを取得
+          const defaultUserToken = process.env.SLACK_TOKEN;
+          const userToken =
+            (await getTokenByUserId(user.id)) || process.env.SLACK_TOKEN;
+          const userClient = new WebClient(userToken);
+          let isStatus = defaultUserToken != userToken;
 
-        // ユーザがトークンを取得していない場合ステータス変更なし
-        if (!isStatus) {
-          let resMessage = `OA認証されていないため、ステータス変更ができません。認証しますか？`;
-          botClient.chat.postMessage({
-            channel: channel.id,
-            thread_ts: message.ts,
-            text: resMessage,
-          });
-        }
-
-        if (selectedAction) {
-          tasks.push(
-            (async () => {
-              const userName = await getUserName(userClient, user.id);
-              return botClient.chat.postMessage({
-                channel: channel.id,
-                thread_ts: message.ts,
-                text: `${userName}さんが${selectedAction}を選択しました！`,
-              });
-            })()
-          );
-
-          // TOKENがない場合ステータス変更なし。
+          // ユーザがトークンを取得していない場合ステータス変更なし
           if (!isStatus) {
-            // Statusに反映する絵文字をセット
-            let emoji = '';
-            let timestamp = 0;
+            let responseText = `@${user.id}\nOA認証されていないため、ステータス変更ができません。認証しますか？`;
+            botClient.chat.postMessage({
+              channel: channel.id,
+              text: responseText,
+              blocks: [
+                {
+                  type: 'section',
+                  text: {
+                    type: 'mrkdwn',
+                    text: responseText,
+                  },
+                },
+                {
+                  type: 'actions',
+                  elements: [
+                    {
+                      type: 'button',
+                      text: {
+                        type: 'plain_text',
+                        text: '認証',
+                        emoji: true,
+                      },
+                      action_id: 'button_add',
+                      style: 'primary',
+                      value: 'oA',
+                    },
+                  ],
+                },
+              ],
+            });
+          }
+
+          if (selectedAction) {
+            tasks.push(
+              (async () => {
+                const userName = await getUserName(userClient, user.id);
+                return botClient.chat.postMessage({
+                  channel: channel.id,
+                  thread_ts: message.ts,
+                  text: `${userName}さんが${selectedAction}を選択しました！`,
+                });
+              })()
+            );
+
+            // TOKENがない場合ステータス変更なし。
+            if (!isStatus) {
+              // Statusに反映する絵文字をセット
+              let emoji = '';
+              let timestamp = 0;
+
+              tasks.push(
+                (async () => {
+                  switch (selectedAction) {
+                    case '本社勤務':
+                      emoji = ':office:';
+                      break;
+                    case '在宅勤務':
+                      emoji = ':house_with_garden:';
+                      break;
+                    case '外出中':
+                      emoji = ':car:';
+                      break;
+                    case 'リモート室':
+                      emoji = ':desktop_computer:';
+                      break;
+                    case '退勤':
+                      selectedAction = '';
+                      break;
+                  }
+
+                  // 20:00までのタイムスタンプを取得
+                  timestamp = getTodayAt8PMJST();
+
+                  // Statusを更新
+                  await updateUserStatus(
+                    userClient,
+                    user.id,
+                    selectedAction,
+                    emoji,
+                    timestamp
+                  );
+                })()
+              );
+            }
 
             tasks.push(
               (async () => {
-                switch (selectedAction) {
-                  case '本社勤務':
-                    emoji = ':office:';
-                    break;
-                  case '在宅勤務':
-                    emoji = ':house_with_garden:';
-                    break;
-                  case '外出中':
-                    emoji = ':car:';
-                    break;
-                  case 'リモート室':
-                    emoji = ':desktop_computer:';
-                    break;
-                  case '退勤':
-                    selectedAction = '';
-                    break;
-                }
+                const ymd = new Date();
+                // 日本時間に合わせる（UTC + 9 時間）
+                ymd.setHours(ymd.getHours() + 9);
 
-                // 20:00までのタイムスタンプを取得
-                timestamp = getTodayAt8PMJST();
-
-                // Statusを更新
-                await updateUserStatus(
-                  userClient,
-                  user.id,
-                  selectedAction,
-                  emoji,
-                  timestamp
-                );
+                // Recordを更新
+                await upsertRecord(user.id, ymd, channel.id, selectedAction);
               })()
             );
-          }
 
-          tasks.push(
-            (async () => {
-              const ymd = new Date();
-              // 日本時間に合わせる（UTC + 9 時間）
-              ymd.setHours(ymd.getHours() + 9);
-
-              // Recordを更新
-              await upsertRecord(user.id, ymd, channel.id, selectedAction);
-            })()
-          );
-
-          try {
-            await Promise.all(tasks);
-          } catch (error) {
-            console.error('task実行時にエラーが発生しました:' + error);
-          }
-        } else {
-          // 一覧を表示
-          // チャンネルメンバーを取得
-          const membersResponse = await botClient.conversations.members({
-            channel: channel.id,
-          });
-          const members = membersResponse.members || [];
-
-          // メンバー情報を取得してBotを除外
-          const filteredMembers: string[] = [];
-          for (const memberId of members) {
-            const userInfo = await botClient.users.info({ user: memberId });
-            if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
-              filteredMembers.push(memberId);
+            try {
+              await Promise.all(tasks);
+            } catch (error) {
+              console.error('task実行時にエラーが発生しました:' + error);
             }
+          } else {
+            // 一覧を表示
+            // チャンネルメンバーを取得
+            const membersResponse = await botClient.conversations.members({
+              channel: channel.id,
+            });
+            const members = membersResponse.members || [];
+
+            // メンバー情報を取得してBotを除外
+            const filteredMembers: string[] = [];
+            for (const memberId of members) {
+              const userInfo = await botClient.users.info({ user: memberId });
+              if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
+                filteredMembers.push(memberId);
+              }
+            }
+
+            // モーダルを表示
+            await botClient.views.open({
+              trigger_id: trigger_id,
+              view: createModal(filteredMembers),
+            });
           }
-          console.log(members);
-
-          // モーダルを表示
-          await botClient.views.open({
-            trigger_id: trigger_id,
-            view: createModal(filteredMembers),
-          });
         }
-
         res.status(200).send('Status updated');
       } else {
         res.status(400).send('No actions found');
