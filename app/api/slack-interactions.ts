@@ -220,7 +220,6 @@ export default async function handler(
 
           res.status(200).send('Token updated');
         } catch (error) {
-          console.error('Error processing Slack : ' + error);
           res.status(400).send('No actions found');
         }
       }
