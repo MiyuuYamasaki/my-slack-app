@@ -15,7 +15,7 @@ model user {
 
 model record {
   id              Int      @id @default(autoincrement())
-  ymd             DateTime
+  ymd             String
   selected_status String
   leave_check     Int      @default(0)
   channel_id      String

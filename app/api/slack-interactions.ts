@@ -32,47 +32,15 @@ export default async function handler(
         console.log(JSON.stringify(message, null, 2));
 
         if (selectedAction === 'OA認証') {
-          const modalView: ModalView = {
-            type: 'modal', // ここで "modal" を明示的に指定
-            title: {
-              type: 'plain_text',
-              text: 'OA認証',
-            },
-            blocks: [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: `①URLをCクリック（https://api.slack.com/apps/A085S81KVAS/oauth?）\n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
-                },
-              },
-              {
-                type: 'input',
-                block_id: 'token_block',
-                element: {
-                  type: 'plain_text_input',
-                  action_id: 'token_input',
-                  placeholder: {
-                    type: 'plain_text',
-                    text: 'User OAuth Tokenを入力',
-                  },
-                },
-                label: {
-                  type: 'plain_text',
-                  text: 'User OAuth Token',
-                },
-              },
-            ],
-            submit: {
-              type: 'plain_text',
-              text: '確定',
-            },
-          };
+          // 正規表現を使って「@」の後に続くユーザー名を抽出
+          const messageUser = message.match(/@([a-zA-Z0-9-_]+)/);
+          const isUser = messageUser === user.name;
+          console.log('isUser:' + isUser);
 
           // モーダルウィンドウを開く
           await botClient.views.open({
             trigger_id: trigger_id,
-            view: modalView,
+            view: createUserModal(isUser),
           });
         } else if (selectedAction != undefined) {
           // ユーザトークンを取得
@@ -175,7 +143,7 @@ export default async function handler(
               ymd.setHours(ymd.getHours() + 9);
 
               // 日付部分だけを取得（"YYYY-MM-DD"）
-              const formattedDate = ymd.toISOString().split('T')[0];
+              const formattedDate = ymd.toISOString().split('T')[0].toString();
 
               console.log(formattedDate); // 例: "2024-12-26"
 
@@ -392,4 +360,66 @@ const createModal = (members: string[]) => {
       },
     ],
   };
+};
+
+// OA認証用のモーダルを作成する関数
+const createUserModal = (isUser: boolean): ModalView => {
+  if (isUser) {
+    // ユーザーの場合のモーダル
+    return {
+      type: 'modal', // ここで "modal" を明示的に指定
+      title: {
+        type: 'plain_text',
+        text: 'OA認証',
+      },
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `①URLをCクリック https://api.slack.com/apps/A085S81KVAS/oauth? \n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
+          },
+        },
+        {
+          type: 'input',
+          block_id: 'token_block',
+          element: {
+            type: 'plain_text_input',
+            action_id: 'token_input',
+            placeholder: {
+              type: 'plain_text',
+              text: 'User OAuth Tokenを入力',
+            },
+          },
+          label: {
+            type: 'plain_text',
+            text: 'User OAuth Token',
+          },
+        },
+      ],
+      submit: {
+        type: 'plain_text',
+        text: '確定',
+      },
+    };
+  } else {
+    // ユーザーでない場合のエラーモーダル
+    return {
+      type: 'modal', // ここで "modal" を明示的に指定
+      title: {
+        type: 'plain_text',
+        text: 'エラー 😢',
+        emoji: true,
+      },
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '本人以外認証できません。',
+          },
+        },
+      ],
+    };
+  }
 };
