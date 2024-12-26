@@ -8,7 +8,12 @@
   ],
   "build": {
     "env": {
-      "PRISMA_GENERATE_COMMAND": "npx prisma generate"
+      "PRISMA_GENERATE_COMMAND": "npx prisma generate",
+      "src": "package.json",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   },
   "routes": [
@@ -16,5 +21,8 @@
       "src": "/api/slack-interactions",
       "dest": "/app/api/slack-interactions.ts"
     }
-  ]
+  ],
+  "hooks": {
+    "build": "prisma generate"
+  }
 }
