@@ -11,6 +11,9 @@
     "NEXT_PUBLIC_SUPABASE_URL": "@your-supabase-url",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@your-supabase-anon-key"
   },
+  "build": {
+    "command": "npx prisma generate && npm run build"
+  },
   "routes": [
     {
       "src": "/api/slack-interactions",
