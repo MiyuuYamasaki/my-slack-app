@@ -2,7 +2,15 @@ import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// サーバーレス環境では、PrismaClientのインスタンスをグローバルに保持するのが推奨されます
+const prisma = global.prisma || new PrismaClient();
+
+// サーバーレス環境では再利用されるように設定
+if (process.env.NODE_ENV !== 'production') {
+  global.prisma = prisma;
+}
+
+export { prisma };
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
