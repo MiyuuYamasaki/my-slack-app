@@ -34,18 +34,10 @@ export default async function handler(
         console.log('selectedAction:' + selectedAction);
 
         if (selectedAction === 'OA認証') {
-          // 正規表現を使って「@」の後に続くユーザー名を抽出
-          let messageUser = message.text.match(/@([a-zA-Z0-9-_]+)/);
-          messageUser = messageUser[1]; // @を除外したユーザー名
-          const isUser = messageUser === user.name;
-          console.log(
-            messageUser + ':' + user.name + '=' + isUser ? 'match' : 'unMatch'
-          );
-
           // モーダルウィンドウを開く
           await botClient.views.open({
             trigger_id: trigger_id,
-            view: createUserModal(isUser, user.name),
+            view: createUserModal(user.name),
           });
         } else if (selectedAction != undefined) {
           // ユーザトークンを取得
@@ -237,7 +229,7 @@ export default async function handler(
 
 // ユーザートークン取得
 async function getTokenByUserId(userId: string) {
-  const userRecord = await prisma.user.findFirst({
+  const userRecord = await prisma.users.findFirst({
     where: {
       slack_user_id: userId,
     },
@@ -320,7 +312,7 @@ async function insertToken(
   Token: string
 ): Promise<boolean> {
   try {
-    await prisma.user.create({
+    await prisma.users.create({
       data: {
         slack_user_id: slackUserId,
         token: Token,
@@ -397,73 +389,52 @@ const createModal = (members: string[]) => {
 };
 
 // OA認証用のモーダルを作成する関数
-const createUserModal = (isUser: boolean, user_id: string): ModalView => {
-  if (isUser) {
-    // ユーザーの場合のモーダル
-    return {
-      type: 'modal',
-      callback_id: 'modal_oa_auth',
-      title: {
-        type: 'plain_text',
-        text: 'OA認証',
+const createUserModal = (user_id: string): ModalView => {
+  // ユーザーの場合のモーダル
+  return {
+    type: 'modal',
+    callback_id: 'modal_oa_auth',
+    title: {
+      type: 'plain_text',
+      text: 'OA認証',
+    },
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `①URLをCクリック https://api.slack.com/apps/A085S81KVAS/oauth? \n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
+        },
       },
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `①URLをCクリック https://api.slack.com/apps/A085S81KVAS/oauth? \n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
-          },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*User Id*: ${user_id}`,
         },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*User Id*: ${user_id}`,
-          },
-        },
-        {
-          type: 'input',
-          block_id: 'token_block',
-          element: {
-            type: 'plain_text_input',
-            action_id: 'token_input',
-            placeholder: {
-              type: 'plain_text',
-              text: 'User OAuth Tokenを入力',
-            },
-          },
-          label: {
+      },
+      {
+        type: 'input',
+        block_id: 'token_block',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'token_input',
+          placeholder: {
             type: 'plain_text',
-            text: '*User OAuth Token*',
+            text: 'User OAuth Tokenを入力',
           },
         },
-      ],
-      submit: {
-        type: 'plain_text',
-        text: '確定',
-      },
-    };
-  } else {
-    // ユーザーでない場合のエラーモーダル
-    return {
-      type: 'modal', // ここで "modal" を明示的に指定
-      title: {
-        type: 'plain_text',
-        text: 'エラー 😢',
-        emoji: true,
-      },
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: '本人以外認証できません。',
-          },
+        label: {
+          type: 'plain_text',
+          text: '*User OAuth Token*',
         },
-      ],
-    };
-  }
+      },
+    ],
+    submit: {
+      type: 'plain_text',
+      text: '確定',
+    },
+  };
 };
 
 const openTokenModal = (insertResult: boolean): ModalView => {
