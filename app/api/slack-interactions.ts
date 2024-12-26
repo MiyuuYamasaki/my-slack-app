@@ -29,44 +29,81 @@ export default async function handler(
         let selectedAction = actions[0].value;
 
         if (selectedAction) {
-          // ユーザが選択したボタンをスレッドへ返信
-          const userName = await getUserName(user.id);
-          await botClient.chat.postMessage({
-            channel: channel.id,
-            thread_ts: message.ts,
-            text: `${userName}さんが${selectedAction}を選択しました！`,
-          });
+          const tasks = [];
+
+          tasks.push(
+            (async () => {
+              const userName = await getUserName(user.id);
+              return botClient.chat.postMessage({
+                channel: channel.id,
+                thread_ts: message.ts,
+                text: `${userName}さんが${selectedAction}を選択しました！`,
+              });
+            })()
+          );
 
           // Statusに反映する絵文字をセット
           let emoji = '';
-          switch (selectedAction) {
-            case '本社勤務':
-              emoji = ':office:';
-              break;
-            case '在宅勤務':
-              emoji = ':house_with_garden:';
-              break;
-            case '外出中':
-              emoji = ':car:';
-              break;
-            case 'リモート室':
-              emoji = ':desktop_computer:';
-              break;
-            case '退勤':
-              selectedAction = '';
-              break;
+          let timestamp = 0;
+
+          tasks.push(
+            (async () => {
+              switch (selectedAction) {
+                case '本社勤務':
+                  emoji = ':office:';
+                  break;
+                case '在宅勤務':
+                  emoji = ':house_with_garden:';
+                  break;
+                case '外出中':
+                  emoji = ':car:';
+                  break;
+                case 'リモート室':
+                  emoji = ':desktop_computer:';
+                  break;
+                case '退勤':
+                  selectedAction = '';
+                  break;
+              }
+
+              // 20:00までのタイムスタンプを取得
+              timestamp = getTodayAt8PMJST();
+
+              // Statusを更新
+              await updateUserStatus(user.id, selectedAction, emoji, timestamp);
+            })()
+          );
+
+          tasks.push(
+            (async () => {
+              const ymd = new Date();
+              // 日本時間に合わせる（UTC + 9 時間）
+              ymd.setHours(ymd.getHours() + 9);
+
+              // Recordを更新
+              await upsertRecord(user.id, ymd, channel.id, selectedAction);
+            })()
+          );
+
+          tasks.push(
+            (async () => {
+              const result = await upsertUser(user.id, '');
+              if (!result) {
+                let resMessage = `User追加しますか？`;
+                botClient.chat.postMessage({
+                  channel: channel.id,
+                  thread_ts: message.ts,
+                  text: resMessage,
+                });
+              }
+            })()
+          );
+
+          try {
+            await Promise.all(tasks);
+          } catch (error) {
+            console.error('task実行時にエラーが発生しました:' + error);
           }
-
-          // 20:00までのタイムスタンプを取得
-          const timestamp = getTodayAt8PMJST();
-          const ymd = new Date();
-          // 日本時間に合わせる（UTC + 9 時間）
-          ymd.setHours(ymd.getHours() + 9);
-
-          // Statusを更新
-          await updateUserStatus(user.id, selectedAction, emoji, timestamp);
-          // Recordを更新
-          await upsertRecord(user.id, ymd, channel.id, selectedAction);
         } else {
           // 一覧を表示
           // チャンネルメンバーを取得
@@ -168,6 +205,26 @@ async function upsertRecord(
           selected_status: selectedStatus,
         },
       });
+    }
+  } catch (error) {
+    console.error('Error processing record:', error);
+  }
+}
+
+// user操作
+async function upsertUser(slackUserId: string, Token: string) {
+  try {
+    // 既存のレコードがあるか確認
+    const existingUserRecord = await prisma.user.findFirst({
+      where: {
+        slack_user_id: slackUserId,
+      },
+    });
+
+    console.log('existingUserRecord:' + existingUserRecord);
+
+    if (!existingUserRecord) {
+      return false;
     }
   } catch (error) {
     console.error('Error processing record:', error);
