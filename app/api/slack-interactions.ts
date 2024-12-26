@@ -211,7 +211,7 @@ export default async function handler(
           const token =
             parsedBody.view.state.values.token_block.token_input.value;
           console.log('token:' + token + ' user:' + user.name);
-          // await insertToken(user.name, token);
+          await insertToken(user.name, token);
           await botClient.chat.update({
             channel: channel.id,
             ts: message.ts, // 'message.ts' が既存のメッセージのタイムスタンプ
@@ -220,6 +220,7 @@ export default async function handler(
 
           res.status(200).send('Token updated');
         } catch (error) {
+          console.error('Error processing Slack : ' + error);
           res.status(400).send('No actions found');
         }
       }
