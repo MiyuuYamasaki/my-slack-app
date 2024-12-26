@@ -6,13 +6,10 @@
       "use": "@vercel/node"
     }
   ],
-  "build": {
-    "env": {
-      "DATABASE_URL": "your-database-url",
-      "NEXT_PUBLIC_SUPABASE_URL": "your-supabase-url",
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-supabase-anon-key"
-    },
-    "postinstall": "npx prisma generate"
+  "env": {
+    "DATABASE_URL": "@your-database-url",
+    "NEXT_PUBLIC_SUPABASE_URL": "@your-supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@your-supabase-anon-key"
   },
   "routes": [
     {
