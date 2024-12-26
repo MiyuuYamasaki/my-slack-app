@@ -210,23 +210,14 @@ export default async function handler(
           // モーダルから入力された値を取得
           const token =
             parsedBody.view.state.values.token_block.token_input.value;
-          // const userId =
-          // parsedBody.view.state.values.user_id_block.user_id_input.value;
-          console.log('token:' + token);
-          // console.log('userId:' + userId);
+          console.log('token:' + token + ' user:' + user.name);
+          await insertToken(user.name, token);
+          await botClient.chat.update({
+            channel: channel.id,
+            ts: message.ts, // 'message.ts' が既存のメッセージのタイムスタンプ
+            text: `@${user.name}\nOA認証に成功しました！`,
+          });
 
-          // actions 配列内のボタンアクションを探す
-          const buttonAction = actions.find(
-            (action) => action.action_id === 'button_add'
-          );
-
-          if (buttonAction) {
-            // ボタンが押された場合、ボタンの情報を処理する
-            console.log('Button clicked by user:', user.id); // ボタンをクリックしたユーザー
-            console.log('Button action value:', buttonAction.value); // ボタンの値（例: "OA認証"）
-            console.log('Channel:', channel.id); // チャンネルID
-            console.log('Message text:', message.text); // メッセージテキスト
-          }
           res.status(200).send('Token updated');
         } catch (error) {
           res.status(400).send('No actions found');
@@ -323,20 +314,14 @@ async function upsertRecord(
 }
 
 // user操作
-async function upsertUser(slackUserId: string, Token: string) {
+async function insertToken(slackUserId: string, Token: string) {
   try {
-    // 既存のレコードがあるか確認
-    const existingUserRecord = await prisma.user.findFirst({
-      where: {
+    await prisma.user.create({
+      data: {
         slack_user_id: slackUserId,
+        token: Token,
       },
     });
-
-    console.log('existingUserRecord:' + existingUserRecord);
-
-    if (!existingUserRecord) {
-      return false;
-    }
   } catch (error) {
     console.error('Error processing user:', error);
   }
