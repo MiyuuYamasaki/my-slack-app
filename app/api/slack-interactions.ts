@@ -1,12 +1,12 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
+import { use } from 'react';
 
 const prisma = new PrismaClient();
 
 // Slackのトークンを環境変数から取得
-const userToken = process.env.SLACK_TOKEN;
-const userClient = new WebClient(userToken);
+
 const botToken = process.env.BOT_TOKEN;
 const botClient = new WebClient(botToken);
 
@@ -26,14 +26,31 @@ export default async function handler(
       const { actions, user, channel, message, trigger_id } = parsedBody;
 
       if (actions && actions.length > 0) {
+        const tasks = [];
+
+        // ユーザトークンを取得
+        const defaultUserToken = process.env.SLACK_TOKEN;
+        const userToken =
+          (await getTokenByUserId(user.id)) || process.env.SLACK_TOKEN;
+        const userClient = new WebClient(userToken);
+        let isStatus = defaultUserToken === userToken;
+
+        // ユーザがトークンを取得していない場合ステータス変更なし
+        if (!isStatus) {
+          let resMessage = `OA認証されていないため、ステータス変更ができません。認証しますか？`;
+          botClient.chat.postMessage({
+            channel: channel.id,
+            thread_ts: message.ts,
+            text: resMessage,
+          });
+        }
+
         let selectedAction = actions[0].value;
 
         if (selectedAction) {
-          const tasks = [];
-
           tasks.push(
             (async () => {
-              const userName = await getUserName(user.id);
+              const userName = await getUserName(userClient, user.id);
               return botClient.chat.postMessage({
                 channel: channel.id,
                 thread_ts: message.ts,
@@ -42,37 +59,46 @@ export default async function handler(
             })()
           );
 
-          // Statusに反映する絵文字をセット
-          let emoji = '';
-          let timestamp = 0;
+          // TOKENがない場合ステータス変更なし。
+          if (!isStatus) {
+            // Statusに反映する絵文字をセット
+            let emoji = '';
+            let timestamp = 0;
 
-          tasks.push(
-            (async () => {
-              switch (selectedAction) {
-                case '本社勤務':
-                  emoji = ':office:';
-                  break;
-                case '在宅勤務':
-                  emoji = ':house_with_garden:';
-                  break;
-                case '外出中':
-                  emoji = ':car:';
-                  break;
-                case 'リモート室':
-                  emoji = ':desktop_computer:';
-                  break;
-                case '退勤':
-                  selectedAction = '';
-                  break;
-              }
+            tasks.push(
+              (async () => {
+                switch (selectedAction) {
+                  case '本社勤務':
+                    emoji = ':office:';
+                    break;
+                  case '在宅勤務':
+                    emoji = ':house_with_garden:';
+                    break;
+                  case '外出中':
+                    emoji = ':car:';
+                    break;
+                  case 'リモート室':
+                    emoji = ':desktop_computer:';
+                    break;
+                  case '退勤':
+                    selectedAction = '';
+                    break;
+                }
 
-              // 20:00までのタイムスタンプを取得
-              timestamp = getTodayAt8PMJST();
+                // 20:00までのタイムスタンプを取得
+                timestamp = getTodayAt8PMJST();
 
-              // Statusを更新
-              await updateUserStatus(user.id, selectedAction, emoji, timestamp);
-            })()
-          );
+                // Statusを更新
+                await updateUserStatus(
+                  userClient,
+                  user.id,
+                  selectedAction,
+                  emoji,
+                  timestamp
+                );
+              })()
+            );
+          }
 
           tasks.push(
             (async () => {
@@ -82,20 +108,6 @@ export default async function handler(
 
               // Recordを更新
               await upsertRecord(user.id, ymd, channel.id, selectedAction);
-            })()
-          );
-
-          tasks.push(
-            (async () => {
-              const result = await upsertUser(user.id, '');
-              if (!result) {
-                let resMessage = `User追加しますか？`;
-                botClient.chat.postMessage({
-                  channel: channel.id,
-                  thread_ts: message.ts,
-                  text: resMessage,
-                });
-              }
             })()
           );
 
@@ -144,8 +156,20 @@ export default async function handler(
   }
 }
 
+// ユーザートークン取得
+async function getTokenByUserId(userId: string) {
+  const userRecord = await prisma.user.findFirst({
+    where: {
+      slack_user_id: userId,
+    },
+  });
+
+  return userRecord ? userRecord.token : undefined;
+}
+
 // ユーザーのステータスを更新する関数
 async function updateUserStatus(
+  userClient: WebClient,
   userId: string,
   statusText: string,
   emoji: string,
@@ -227,12 +251,15 @@ async function upsertUser(slackUserId: string, Token: string) {
       return false;
     }
   } catch (error) {
-    console.error('Error processing record:', error);
+    console.error('Error processing user:', error);
   }
 }
 
 // ユーザの表示名を取得する関数
-export async function getUserName(userId: string): Promise<string> {
+export async function getUserName(
+  userClient: WebClient,
+  userId: string
+): Promise<string> {
   try {
     const result = await userClient.users.info({ user: userId });
 
