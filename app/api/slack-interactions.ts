@@ -12,8 +12,6 @@ async function initializePrisma() {
   }
 }
 
-initializePrisma();
-
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
 const userClient = new WebClient(userToken);
@@ -32,6 +30,8 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
+      initializePrisma();
+
       const parsedBody = JSON.parse(req.body.payload);
       const { actions, user, channel, message, trigger_id } = parsedBody;
 
