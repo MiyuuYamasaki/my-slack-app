@@ -1,7 +1,6 @@
 import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
 
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
@@ -21,6 +20,8 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
+      const prisma = new PrismaClient();
+      console.log('OK:' + prisma);
       const parsedBody = JSON.parse(req.body.payload);
       const { actions, user, channel, message, trigger_id } = parsedBody;
 
