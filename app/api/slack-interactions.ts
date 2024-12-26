@@ -1,7 +1,6 @@
-import { WebClient } from '@slack/web-api';
+import { WebClient, ModalView } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
-import { use } from 'react';
 
 const prisma = new PrismaClient();
 
@@ -32,19 +31,59 @@ export default async function handler(
         console.log('selectedAction:' + selectedAction);
 
         if (selectedAction === 'OA認証') {
-          console.log('oaだよ!');
-        } else {
+          const modalView: ModalView = {
+            type: 'modal', // ここで "modal" を明示的に指定
+            title: {
+              type: 'plain_text',
+              text: 'OA認証',
+            },
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `①URLをCクリック（https://api.slack.com/apps/A085S81KVAS/oauth?）\n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
+                },
+              },
+              {
+                type: 'input',
+                block_id: 'token_block',
+                element: {
+                  type: 'plain_text_input',
+                  action_id: 'token_input',
+                  placeholder: {
+                    type: 'plain_text',
+                    text: 'User OAuth Tokenを入力',
+                  },
+                },
+                label: {
+                  type: 'plain_text',
+                  text: 'User OAuth Token',
+                },
+              },
+            ],
+            submit: {
+              type: 'plain_text',
+              text: '確定',
+            },
+          };
+
+          // モーダルウィンドウを開く
+          await botClient.views.open({
+            trigger_id: trigger_id,
+            view: modalView,
+          });
+        } else if (selectedAction != undefined) {
           // ユーザトークンを取得
           const defaultUserToken = process.env.SLACK_TOKEN;
           const userToken =
             (await getTokenByUserId(user.id)) || process.env.SLACK_TOKEN;
           const userClient = new WebClient(userToken);
-          let isStatus = defaultUserToken != userToken;
+          let isStatus = defaultUserToken === userToken;
 
           // ユーザがトークンを取得していない場合ステータス変更なし
-          if (!isStatus) {
+          if (isStatus) {
             let responseText = `@${user.name}\nOA認証されていないため、ステータス変更ができません。認証しますか？`;
-            console.log(user);
             botClient.chat.postMessage({
               channel: channel.id,
               text: responseText,
@@ -76,98 +115,106 @@ export default async function handler(
             });
           }
 
-          if (selectedAction) {
-            tasks.push(
-              (async () => {
-                const userName = await getUserName(userClient, user.id);
-                return botClient.chat.postMessage({
-                  channel: channel.id,
-                  thread_ts: message.ts,
-                  text: `${userName}さんが${selectedAction}を選択しました！`,
-                });
-              })()
-            );
+          tasks.push(
+            (async () => {
+              const userName = await getUserName(userClient, user.id);
+              return botClient.chat.postMessage({
+                channel: channel.id,
+                thread_ts: message.ts,
+                text: `${userName}さんが${selectedAction}を選択しました！`,
+              });
+            })()
+          );
 
-            // TOKENがない場合ステータス変更なし。
-            if (!isStatus) {
-              // Statusに反映する絵文字をセット
-              let emoji = '';
-              let timestamp = 0;
-
-              tasks.push(
-                (async () => {
-                  switch (selectedAction) {
-                    case '本社勤務':
-                      emoji = ':office:';
-                      break;
-                    case '在宅勤務':
-                      emoji = ':house_with_garden:';
-                      break;
-                    case '外出中':
-                      emoji = ':car:';
-                      break;
-                    case 'リモート室':
-                      emoji = ':desktop_computer:';
-                      break;
-                    case '退勤':
-                      selectedAction = '';
-                      break;
-                  }
-
-                  // 20:00までのタイムスタンプを取得
-                  timestamp = getTodayAt8PMJST();
-
-                  // Statusを更新
-                  await updateUserStatus(
-                    userClient,
-                    user.id,
-                    selectedAction,
-                    emoji,
-                    timestamp
-                  );
-                })()
-              );
-            }
+          // TOKENがない場合ステータス変更なし。
+          if (!isStatus) {
+            // Statusに反映する絵文字をセット
+            let emoji = '';
+            let timestamp = 0;
 
             tasks.push(
               (async () => {
-                const ymd = new Date();
-                // 日本時間に合わせる（UTC + 9 時間）
-                ymd.setHours(ymd.getHours() + 9);
+                switch (selectedAction) {
+                  case '本社勤務':
+                    emoji = ':office:';
+                    break;
+                  case '在宅勤務':
+                    emoji = ':house_with_garden:';
+                    break;
+                  case '外出中':
+                    emoji = ':car:';
+                    break;
+                  case 'リモート室':
+                    emoji = ':desktop_computer:';
+                    break;
+                  case '退勤':
+                    selectedAction = '';
+                    break;
+                }
 
-                // Recordを更新
-                await upsertRecord(user.id, ymd, channel.id, selectedAction);
+                // 20:00までのタイムスタンプを取得
+                timestamp = getTodayAt8PMJST();
+
+                // Statusを更新
+                await updateUserStatus(
+                  userClient,
+                  user.id,
+                  selectedAction,
+                  emoji,
+                  timestamp
+                );
               })()
             );
-
-            try {
-              await Promise.all(tasks);
-            } catch (error) {
-              console.error('task実行時にエラーが発生しました:' + error);
-            }
-          } else {
-            // 一覧を表示
-            // チャンネルメンバーを取得
-            const membersResponse = await botClient.conversations.members({
-              channel: channel.id,
-            });
-            const members = membersResponse.members || [];
-
-            // メンバー情報を取得してBotを除外
-            const filteredMembers: string[] = [];
-            for (const memberId of members) {
-              const userInfo = await botClient.users.info({ user: memberId });
-              if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
-                filteredMembers.push(memberId);
-              }
-            }
-
-            // モーダルを表示
-            await botClient.views.open({
-              trigger_id: trigger_id,
-              view: createModal(filteredMembers),
-            });
           }
+
+          tasks.push(
+            (async () => {
+              const ymd = new Date();
+              // 日本時間に合わせる（UTC + 9 時間）
+              ymd.setHours(ymd.getHours() + 9);
+
+              // 日付部分だけを取得（"YYYY-MM-DD"）
+              const formattedDate = ymd.toISOString().split('T')[0];
+
+              console.log(formattedDate); // 例: "2024-12-26"
+
+              // Recordを更新
+              await upsertRecord(
+                user.id,
+                formattedDate,
+                channel.id,
+                selectedAction
+              );
+            })()
+          );
+
+          try {
+            await Promise.all(tasks);
+          } catch (error) {
+            console.error('task実行時にエラーが発生しました:' + error);
+          }
+        } else {
+          // 一覧を表示
+          // チャンネルメンバーを取得
+          const membersResponse = await botClient.conversations.members({
+            channel: channel.id,
+          });
+          const members = membersResponse.members || [];
+
+          // メンバー情報を取得してBotを除外
+          const filteredMembers: string[] = [];
+          for (const memberId of members) {
+            const userInfo = await botClient.users.info({ user: memberId });
+            if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
+              filteredMembers.push(memberId);
+            }
+          }
+
+          // モーダルを表示
+          await botClient.views.open({
+            trigger_id: trigger_id,
+            view: createModal(filteredMembers),
+          });
         }
         res.status(200).send('Status updated');
       } else {
@@ -223,7 +270,7 @@ async function updateUserStatus(
 // record操作
 async function upsertRecord(
   userId: string,
-  ymd: Date,
+  ymd: string,
   channelId: string,
   selectedStatus: string
 ) {
