@@ -33,7 +33,9 @@ export default async function handler(
 
         if (selectedAction === 'OA認証') {
           // 正規表現を使って「@」の後に続くユーザー名を抽出
-          const messageUser = message.text.match(/@([a-zA-Z0-9-_]+)/);
+          let messageUser = message.text.match(/@([a-zA-Z0-9-_]+)/);
+          messageUser = messageUser[1]; // @を除外したユーザー名
+
           const isUser = messageUser === user.name;
           console.log(messageUser + ':' + isUser);
 
