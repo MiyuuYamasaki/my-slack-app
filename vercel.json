@@ -8,13 +8,11 @@
   ],
   "build": {
     "env": {
-      "PRISMA_GENERATE_COMMAND": "npx prisma generate",
-      "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
-    }
+      "DATABASE_URL": "your-database-url",
+      "NEXT_PUBLIC_SUPABASE_URL": "your-supabase-url",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-supabase-anon-key"
+    },
+    "postinstall": "npx prisma generate"
   },
   "routes": [
     {
