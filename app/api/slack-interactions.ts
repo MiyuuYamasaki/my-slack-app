@@ -2,6 +2,8 @@ import { WebClient } from '@slack/web-api';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
+
 // Slackのトークンを環境変数から取得
 const userToken = process.env.SLACK_TOKEN;
 const userClient = new WebClient(userToken);
@@ -20,8 +22,6 @@ export default async function handler(
 ) {
   if (req.method === 'POST') {
     try {
-      const prisma = new PrismaClient();
-      console.log('OK:' + prisma);
       const parsedBody = JSON.parse(req.body.payload);
       const { actions, user, channel, message, trigger_id } = parsedBody;
 
@@ -59,19 +59,11 @@ export default async function handler(
 
           // 20:00までのタイムスタンプを取得
           const timestamp = getTodayAt8PMJST();
-          const dates = 0; // new/upd判断用何か作る
-          // const records = await prisma.statusRecord.findMany({
-          //   where: { user_id: user.id },
-          // });
-          // console.log('Found records:', records);
 
-          // SStatusを更新
+          // Statusを更新
           await updateUserStatus(user.id, selectedAction, emoji, timestamp);
-          // if (dates === 0) {
-          //   await create(user.id, selectedAction, 0, channel.id);
-          // } else {
-          //   update(recordId, selectedAction, 1);
-          // }
+          // Recordを更新
+          await upsertRecord(user.id, '2024-12-26', channel.id, selectedAction);
         } else {
           // 一覧を表示
           // チャンネルメンバーを取得
@@ -120,7 +112,7 @@ async function updateUserStatus(
   timestamp: number
 ) {
   try {
-    const statusExpiration = emoji ? 1735124400 : 0; // emojiが空でなければtimestamp、そうでなければ0を設定
+    const statusExpiration = emoji ? '' : 0; // emojiが空でなければtimestamp、そうでなければ0を設定
 
     await userClient.users.profile.set({
       user: userId,
@@ -136,40 +128,48 @@ async function updateUserStatus(
   }
 }
 
-// Record更新
-// async function createRecord(
-//   workStyle: string,
-//   leaveCheck: number,
-//   channelId: string,
-//   userId: string
-// ) {
-//   const { data, error } = await supabase.from('records').insert([
-//     {
-//       ymd: new Date().toISOString().split('T')[0], // 日付フォーマット
-//       selected_status: workStyle,
-//       leave_check: leaveCheck,
-//       channel_id: channelId,
-//       user_id: userId,
-//     },
-//   ]);
+// record操作
+async function upsertRecord(
+  userId: string,
+  selectedDate: string,
+  channelId: string,
+  selectedStatus: string
+) {
+  try {
+    // 既存のレコードがあるか確認
+    const existingRecord = await prisma.record.findFirst({
+      where: {
+        user_id: userId,
+        ymd: selectedDate,
+        channel_id: channelId,
+      },
+    });
 
-//   if (error) {
-//     console.error('Error creating record:', error);
-//   } else {
-//     console.log('Record created:', data);
-//   }
-// }
+    console.log('existingRecord:' + existingRecord);
 
-// async function update(id: number, work_style: string, leave_check: number) {
-//   const updatedStatRecord = await prisma.statusRecord.update({
-//     where: { id: id }, // レコードIDを指定
-//     data: {
-//       selected_status: work_style,
-//       leave_check: leave_check,
-//     },
-//   });
-//   console.log('Record updated:', updatedStatRecord);
-// }
+    if (!existingRecord) {
+      // レコードが存在しない場合、作成
+      await prisma.record.create({
+        data: {
+          user_id: userId,
+          ymd: selectedDate,
+          selected_status: selectedStatus,
+          channel_id: channelId,
+        },
+      });
+    } else if (existingRecord.selected_status !== selectedStatus) {
+      // レコードが存在し、selected_statusが異なる場合、更新
+      await prisma.record.update({
+        where: { id: existingRecord.id },
+        data: {
+          selected_status: selectedStatus,
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Error processing record:', error);
+  }
+}
 
 // ユーザの表示名を取得する関数
 export async function getUserName(userId: string): Promise<string> {
