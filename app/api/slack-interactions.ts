@@ -210,10 +210,23 @@ export default async function handler(
           // モーダルから入力された値を取得
           const token =
             parsedBody.view.state.values.token_block.token_input.value;
-          const userId =
-            parsedBody.view.state.values.user_id_block.user_id_input.value;
+          // const userId =
+          // parsedBody.view.state.values.user_id_block.user_id_input.value;
           console.log('token:' + token);
-          console.log('userId:' + userId);
+          // console.log('userId:' + userId);
+
+          // actions 配列内のボタンアクションを探す
+          const buttonAction = actions.find(
+            (action) => action.action_id === 'button_add'
+          );
+
+          if (buttonAction) {
+            // ボタンが押された場合、ボタンの情報を処理する
+            console.log('Button clicked by user:', user.id); // ボタンをクリックしたユーザー
+            console.log('Button action value:', buttonAction.value); // ボタンの値（例: "OA認証"）
+            console.log('Channel:', channel.id); // チャンネルID
+            console.log('Message text:', message.text); // メッセージテキスト
+          }
           res.status(200).send('Token updated');
         } catch (error) {
           res.status(400).send('No actions found');
@@ -412,30 +425,9 @@ const createUserModal = (isUser: boolean, user_id: string): ModalView => {
         },
         {
           type: 'section',
-          block_id: 'user_id_block',
           text: {
             type: 'mrkdwn',
-            text: '*User Id*',
-          },
-          accessory: {
-            type: 'static_select',
-            action_id: 'user_id_input',
-            initial_option: {
-              text: {
-                type: 'plain_text',
-                text: 'user_id', // 初期値を設定
-              },
-              value: 'user_id',
-            },
-            options: [
-              {
-                text: {
-                  type: 'plain_text',
-                  text: 'user_id', // ユーザーが変更できない選択肢
-                },
-                value: 'user_id',
-              },
-            ],
+            text: `*User Id*: ${user_id}`,
           },
         },
         {
