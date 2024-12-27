@@ -47,12 +47,9 @@ export default async function handler(
           const userClient = new WebClient(userToken);
           console.log('userToken:' + userToken);
           console.log('userClient:' + userClient);
+          const isUser = userToken === process.env.SLACK_TOKEN;
 
-          // ユーザー認証テスト
-          try {
-            const authTest = await userClient.auth.test();
-            console.log('Auth Test Result:', authTest);
-
+          if (!isUser) {
             // Statusに反映する絵文字をセット
             let emoji = '';
             let timestamp = 0;
@@ -90,7 +87,7 @@ export default async function handler(
                 );
               })()
             );
-          } catch (error) {
+          } else {
             // ユーザがトークンを取得していない場合ステータス変更なし
             tasks.push(async () => {
               let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
@@ -135,7 +132,6 @@ export default async function handler(
                 ],
               });
             });
-            console.error('Token is invalid or expired:', error);
           }
 
           tasks.push(
