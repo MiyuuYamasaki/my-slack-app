@@ -196,14 +196,20 @@ export default async function handler(
           const token =
             parsedBody.view.state.values.token_block.token_input.value;
           console.log('token:' + token + ' user:' + user.name);
+
+          // private_metadata を取得
+          const privateMetadata = JSON.parse(parsedBody.private_metadata);
+          const channelId = privateMetadata.channel_id; // channel_id を取り出す
+          console.log('channelId:' + channelId);
+
           const result = await insertToken(user.name, token);
 
           // ユーザがトークンを取得していない場合ステータス変更なし
           let responseText = result
             ? 'OA認証が成功しました😊'
             : '問題が発生しました。\n管理者へお問い合わせください。';
-          botClient.chat.postEphemeral({
-            channel: channel.id,
+          await botClient.chat.postEphemeral({
+            channel: channelId,
             user: user.id,
             text: responseText,
           });
