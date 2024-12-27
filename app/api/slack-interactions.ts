@@ -45,6 +45,15 @@ export default async function handler(
           const userToken =
             (await getTokenByUserId(user.name)) || process.env.SLACK_TOKEN;
           const userClient = new WebClient(userToken);
+
+          // ユーザー認証テスト
+          try {
+            const authTest = await userClient.auth.test();
+            console.log('Auth Test Result:', authTest);
+          } catch (error) {
+            console.error('Token is invalid or expired:', error);
+          }
+
           let isStatus = defaultUserToken === userToken;
           console.log('userToken:' + userToken);
 
