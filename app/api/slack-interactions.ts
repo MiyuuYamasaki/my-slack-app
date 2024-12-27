@@ -203,19 +203,15 @@ export default async function handler(
           console.log('token:' + token + ' user:' + user.name);
           const result = await insertToken(user.name, token);
 
-          console.log('parsedBody:', parsedBody);
-          console.log('channel:', parsedBody.channel);
-          console.log('message:', parsedBody.message);
-
           // 成功ならTOKEN追加のメッセージを削除
-          if (result) {
-            if (!channel?.id || !message?.ts) {
-              console.error('Channel ID or message timestamp is undefined');
-              res.status(400).send('Invalid channel or message');
-              return;
-            }
-            await deleteEphemeralMessage(channel.id, message.ts);
-          }
+          // if (result) {
+          //   if (!channel?.id || !message?.ts) {
+          //     console.error('Channel ID or message timestamp is undefined');
+          //     res.status(400).send('Invalid channel or message');
+          //     return;
+          //   }
+          //   await deleteEphemeralMessage(channel.id, message.ts);
+          // }
 
           // モーダルを表示
           await botClient.views.open({
@@ -411,7 +407,6 @@ const createUserModal = (user_id: string, channel_id: string): ModalView => {
     callback_id: 'modal_oa_auth',
     private_metadata: JSON.stringify({
       channel_id: channel_id,
-      user_id: user_id,
     }),
     title: {
       type: 'plain_text',
