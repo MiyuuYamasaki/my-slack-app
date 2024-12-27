@@ -214,10 +214,10 @@ export default async function handler(
           // }
 
           // モーダルを表示
-          await botClient.views.open({
-            trigger_id: trigger_id,
-            view: openTokenModal(result),
-          });
+          // await botClient.views.open({
+          //   trigger_id: trigger_id,
+          //   view: openTokenModal(result),
+          // });
 
           res.status(200).send('Token updated');
         } catch (error) {
