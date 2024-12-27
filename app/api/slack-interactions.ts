@@ -198,7 +198,7 @@ export default async function handler(
           console.log('token:' + token + ' user:' + user.name);
 
           // private_metadata を取得
-          const privateMetadata = JSON.parse(parsedBody.private_metadata);
+          const privateMetadata = JSON.parse(parsedBody.view.private_metadata);
           const channelId = privateMetadata.channel_id; // channel_id を取り出す
           console.log('channelId:' + channelId);
 
