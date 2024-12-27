@@ -28,6 +28,8 @@ export default async function handler(
       const { actions, user, channel, message, trigger_id } = parsedBody;
       console.log(actions);
 
+      console.log('parsedBody:', JSON.stringify(parsedBody, null, 2));
+
       if (actions && actions.length > 0) {
         const tasks = [];
 
@@ -453,54 +455,4 @@ const createUserModal = (user_id: string, channel_id: string): ModalView => {
       text: '確定',
     },
   };
-};
-
-const openTokenModal = (insertResult: boolean): ModalView => {
-  if (insertResult) {
-    // ユーザーの場合のモーダル
-    return {
-      type: 'modal',
-      title: {
-        type: 'plain_text',
-        text: 'お知らせ',
-        emoji: true,
-      },
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: 'OA認証に成功しました。\nボタンクリック時にステータスが変わらない場合、管理者へお問い合わせください。',
-          },
-        },
-      ],
-    };
-  } else {
-    // エラーモーダル
-    return {
-      type: 'modal',
-      title: {
-        type: 'plain_text',
-        text: 'エラー 😢',
-        emoji: true,
-      },
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: 'DB更新に失敗しました。\n管理者へお問い合わせください。',
-          },
-        },
-      ],
-    };
-  }
-};
-
-// メッセージを削除する関数
-const deleteEphemeralMessage = async (channelId: string, messageTs: string) => {
-  await botClient.chat.delete({
-    channel: channelId,
-    ts: messageTs, // メッセージのタイムスタンプ
-  });
 };
