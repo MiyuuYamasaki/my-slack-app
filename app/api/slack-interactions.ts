@@ -246,6 +246,8 @@ export default async function handler(
           } else {
             console.log('Statsu chnage failed');
           }
+
+          res.status(200).send({});
         } catch (error) {
           console.error(error);
 
