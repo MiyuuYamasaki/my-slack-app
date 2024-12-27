@@ -55,83 +55,82 @@ export default async function handler(
             let emoji = '';
             let timestamp = 0;
 
-            tasks.push(
-              (async () => {
-                switch (selectedAction) {
-                  case '本社勤務':
-                    emoji = ':office:';
-                    break;
-                  case '在宅勤務':
-                    emoji = ':house_with_garden:';
-                    break;
-                  case '外出中':
-                    emoji = ':car:';
-                    break;
-                  case 'リモート室':
-                    emoji = ':desktop_computer:';
-                    break;
-                  case '退勤':
-                    selectedAction = '';
-                    break;
-                }
+            // tasks.push(
+            //   (async () => {
+            switch (selectedAction) {
+              case '本社勤務':
+                emoji = ':office:';
+                break;
+              case '在宅勤務':
+                emoji = ':house_with_garden:';
+                break;
+              case '外出中':
+                emoji = ':car:';
+                break;
+              case 'リモート室':
+                emoji = ':desktop_computer:';
+                break;
+              case '退勤':
+                selectedAction = '';
+                break;
+            }
 
-                // 20:00までのタイムスタンプを取得
-                timestamp = getTodayAt8PMJST();
+            // 20:00までのタイムスタンプを取得
+            timestamp = getTodayAt8PMJST();
 
-                // Statusを更新
-                await updateUserStatus(
-                  userClient,
-                  user.id,
-                  selectedAction,
-                  emoji,
-                  timestamp
-                );
-              })()
+            // Statusを更新
+            await updateUserStatus(
+              userClient,
+              user.id,
+              selectedAction,
+              emoji,
+              timestamp
             );
+            // })()
+            // );
           } else {
             // ユーザがトークンを取得していない場合ステータス変更なし
-            tasks.push(async () => {
-              let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
-              botClient.chat.postEphemeral({
-                channel: channel.id,
-                user: user.id,
-                text: responseText,
-                blocks: [
-                  {
-                    type: 'section',
-                    text: {
-                      type: 'mrkdwn',
-                      text: responseText,
+
+            let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
+            botClient.chat.postEphemeral({
+              channel: channel.id,
+              user: user.id,
+              text: responseText,
+              blocks: [
+                {
+                  type: 'section',
+                  text: {
+                    type: 'mrkdwn',
+                    text: responseText,
+                  },
+                },
+                {
+                  type: 'actions',
+                  elements: [
+                    {
+                      type: 'button',
+                      text: {
+                        type: 'plain_text',
+                        text: '認証',
+                        emoji: true,
+                      },
+                      action_id: 'button_add',
+                      style: 'primary',
+                      value: 'OA認証',
                     },
-                  },
-                  {
-                    type: 'actions',
-                    elements: [
-                      {
-                        type: 'button',
-                        text: {
-                          type: 'plain_text',
-                          text: '認証',
-                          emoji: true,
-                        },
-                        action_id: 'button_add',
-                        style: 'primary',
-                        value: 'OA認証',
+                    {
+                      type: 'button',
+                      text: {
+                        type: 'plain_text',
+                        text: '今後表示しない',
+                        emoji: true,
                       },
-                      {
-                        type: 'button',
-                        text: {
-                          type: 'plain_text',
-                          text: '今後表示しない',
-                          emoji: true,
-                        },
-                        action_id: 'button_none',
-                        value: 'NONE',
-                      },
-                    ],
-                  },
-                ],
-              });
+                      action_id: 'button_none',
+                      value: 'NONE',
+                    },
+                  ],
+                },
+              ],
             });
           }
 
