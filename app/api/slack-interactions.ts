@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import { use } from 'react';
 import { Result } from 'postcss';
+import { channel } from 'diagnostics_channel';
 
 const prisma = new PrismaClient();
 
@@ -37,7 +38,7 @@ export default async function handler(
           // モーダルウィンドウを開く
           await botClient.views.open({
             trigger_id: trigger_id,
-            view: createUserModal(user.name),
+            view: createUserModal(user.name, channel.id, message.ts),
           });
         } else if (selectedAction != undefined) {
           // ユーザトークンを取得
@@ -407,11 +408,19 @@ const createModal = (members: string[]) => {
 };
 
 // OA認証用のモーダルを作成する関数
-const createUserModal = (user_id: string): ModalView => {
+const createUserModal = (
+  user_id: string,
+  channelId: string,
+  messageTs: string
+): ModalView => {
   // ユーザーの場合のモーダル
   return {
     type: 'modal',
     callback_id: 'modal_oa_auth',
+    private_metadata: JSON.stringify({
+      channel_id: channelId,
+      message_ts: messageTs,
+    }),
     title: {
       type: 'plain_text',
       text: 'OA認証',
