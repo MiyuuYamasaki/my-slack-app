@@ -47,7 +47,8 @@ export default async function handler(
           const userClient = new WebClient(userToken);
           console.log('userToken:' + userToken);
           console.log('userClient:' + userClient);
-          const isUser = userToken === process.env.SLACK_TOKEN;
+          const isUser: boolean = userToken === process.env.SLACK_TOKEN;
+          console.log('isUser:' + isUser);
 
           if (!isUser) {
             // Statusに反映する絵文字をセット
@@ -153,8 +154,6 @@ export default async function handler(
 
               // 日付部分だけを取得（"YYYY-MM-DD"）
               const formattedDate = ymd.toISOString().split('T')[0].toString();
-
-              console.log(formattedDate); // 例: "2024-12-26"
 
               // Recordを更新
               await upsertRecord(
