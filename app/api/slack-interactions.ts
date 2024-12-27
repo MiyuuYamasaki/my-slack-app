@@ -200,7 +200,7 @@ export default async function handler(
         res.status(200).send('Status updated');
       } else {
         try {
-          const tasks = [];
+          // const action = parsedBody.view.
           // モーダルから入力された値を取得
           const token =
             parsedBody.view.state.values.token_block.token_input.value;
@@ -213,50 +213,38 @@ export default async function handler(
 
           const result = await insertToken(user.name, token);
 
-          tasks.push(async () => {
-            // ユーザがトークンを取得していない場合ステータス変更なし
-            let responseText = result
-              ? 'OA認証が成功しました😊'
-              : '問題が発生しました。\n管理者へお問い合わせください。';
+          // ユーザがトークンを取得していない場合ステータス変更なし
+          let responseText = result
+            ? 'OA認証が成功しました😊'
+            : '問題が発生しました。\n管理者へお問い合わせください。';
 
-            await botClient.chat.postEphemeral({
-              channel: channelId,
-              user: user.id,
-              text: responseText,
-            });
+          await botClient.chat.postEphemeral({
+            channel: channelId,
+            user: user.id,
+            text: responseText,
           });
 
-          tasks.push(async () => {
-            const existingRecord = await prisma.record.findFirst({
-              where: {
-                user_id: user.name,
-                ymd: await getFormattedDate(),
-                channel_id: channelId,
-              },
-            });
-
-            if (existingRecord) {
-              const selectedAction = existingRecord.selected_status;
-              const userClient = new WebClient(token);
-              // Statusを更新
-              await updateUserStatus(
-                userClient,
-                user.id,
-                selectedAction === '退勤' ? '' : selectedAction,
-                actionEmojis[selectedAction],
-                getTodayAt8PMJST()
-              );
-            } else {
-              console.log('Statsu chnage failed');
-            }
+          const existingRecord = await prisma.record.findFirst({
+            where: {
+              user_id: user.name,
+              ymd: await getFormattedDate(),
+              channel_id: channelId,
+            },
           });
 
-          try {
-            await Promise.all(tasks);
-            // Slackにモーダルを閉じるレスポンスを返す
-            res.status(200).send({});
-          } catch (error) {
-            console.error('task実行時にエラーが発生しました:' + error);
+          if (existingRecord) {
+            const selectedAction = existingRecord.selected_status;
+            const userClient = new WebClient(token);
+            // Statusを更新
+            await updateUserStatus(
+              userClient,
+              user.id,
+              selectedAction === '退勤' ? '' : selectedAction,
+              actionEmojis[selectedAction],
+              getTodayAt8PMJST()
+            );
+          } else {
+            console.log('Statsu chnage failed');
           }
         } catch (error) {
           console.error(error);
