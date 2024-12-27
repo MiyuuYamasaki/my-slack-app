@@ -64,11 +64,21 @@ export default async function handler(
           // ユーザトークンを取得
           const userToken =
             (await getTokenByUserId(user.name)) || process.env.SLACK_TOKEN;
-          const userClient = new WebClient(userToken);
           console.log('userToken:' + userToken);
-          console.log('userClient:' + userClient);
-          const isUser: boolean = userToken === process.env.SLACK_TOKEN;
+
+          let isUser: number;
+          if (userToken === 'Not required') {
+            isUser = 0; // OA認証表示なし && ステータス変更なし
+          } else if (userToken != process.env.SLACK_TOKEN) {
+            isUser = 1; // ステータス変更あり
+          } else {
+            isUser = 2; // OA認証表示あり
+          }
           console.log('isUser:' + isUser);
+
+          const userClient = new WebClient(
+            userToken != 'Not required' ? userToken : process.env.SLACK_TOKEN
+          );
 
           tasks.push(
             (async () => {
@@ -81,7 +91,7 @@ export default async function handler(
             })()
           );
 
-          if (!isUser) {
+          if (isUser === 1) {
             // Statusに反映する絵文字をセット
             let emoji = '';
             let timestamp = 0;
@@ -115,7 +125,7 @@ export default async function handler(
               emoji,
               timestamp
             );
-          } else {
+          } else if (isUser === 2) {
             // ユーザがトークンを取得していない場合ステータス変更なし
             let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
             botClient.chat.postEphemeral({
