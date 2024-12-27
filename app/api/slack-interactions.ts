@@ -57,8 +57,6 @@ export default async function handler(
             let emoji = '';
             let timestamp = 0;
 
-            // tasks.push(
-            //   (async () => {
             switch (selectedAction) {
               case '本社勤務':
                 emoji = ':office:';
@@ -88,11 +86,8 @@ export default async function handler(
               emoji,
               timestamp
             );
-            // })()
-            // );
           } else {
             // ユーザがトークンを取得していない場合ステータス変更なし
-
             let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
             botClient.chat.postEphemeral({
               channel: channel.id,
@@ -203,21 +198,15 @@ export default async function handler(
           console.log('token:' + token + ' user:' + user.name);
           const result = await insertToken(user.name, token);
 
-          // 成功ならTOKEN追加のメッセージを削除
-          // if (result) {
-          //   if (!channel?.id || !message?.ts) {
-          //     console.error('Channel ID or message timestamp is undefined');
-          //     res.status(400).send('Invalid channel or message');
-          //     return;
-          //   }
-          //   await deleteEphemeralMessage(channel.id, message.ts);
-          // }
-
-          // モーダルを表示
-          // await botClient.views.open({
-          //   trigger_id: trigger_id,
-          //   view: openTokenModal(result),
-          // });
+          // ユーザがトークンを取得していない場合ステータス変更なし
+          let responseText = result
+            ? 'OA認証が成功しました😊'
+            : '問題が発生しました。\n管理者へお問い合わせください。';
+          botClient.chat.postEphemeral({
+            channel: channel.id,
+            user: user.id,
+            text: responseText,
+          });
 
           res.status(200).send('Token updated');
         } catch (error) {
