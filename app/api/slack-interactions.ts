@@ -207,7 +207,15 @@ export default async function handler(
           const result = await insertToken(user.name, token);
 
           // 成功ならTOKEN追加のメッセージを削除
-          if (result) await deleteEphemeralMessage(channel.id, message.ts);
+          if (result) {
+            if (!channel?.id || !message?.ts) {
+              console.error('Channel ID or message timestamp is undefined');
+              res.status(400).send('Invalid channel or message');
+              return;
+            }
+            await deleteEphemeralMessage(channel.id, message.ts);
+          }
+
           // モーダルを表示
           await botClient.views.open({
             trigger_id: trigger_id,
