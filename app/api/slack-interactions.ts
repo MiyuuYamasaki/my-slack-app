@@ -104,33 +104,11 @@ export default async function handler(
           );
 
           if (isUser === 1) {
-            // Statusに反映する絵文字をセット
-            // let emoji = '';
-            // let timestamp = 0;
-
-            // switch (selectedAction) {
-            //   case '本社勤務':
-            //     emoji = ':office:';
-            //     break;
-            //   case '在宅勤務':
-            //     emoji = ':house_with_garden:';
-            //     break;
-            //   case '外出中':
-            //     emoji = ':car:';
-            //     break;
-            //   case 'リモート室':
-            //     emoji = ':desktop_computer:';
-            //     break;
-            //   case '退勤':
-            //     selectedAction = '';
-            //     break;
-            // }
-
             // Statusを更新
             await updateUserStatus(
               userClient,
               user.id,
-              selectedAction,
+              selectedAction === '退勤' ? '' : selectedAction,
               actionEmojis[selectedAction],
               getTodayAt8PMJST()
             );
@@ -256,14 +234,16 @@ export default async function handler(
                 channel_id: channelId,
               },
             });
+
             if (existingRecord) {
+              const selectedAction = existingRecord.selected_status;
               const userClient = new WebClient(token);
               // Statusを更新
               await updateUserStatus(
                 userClient,
                 user.id,
-                existingRecord.selected_status,
-                actionEmojis[existingRecord.selected_status],
+                selectedAction === '退勤' ? '' : selectedAction,
+                actionEmojis[selectedAction],
                 getTodayAt8PMJST()
               );
             } else {
@@ -271,8 +251,13 @@ export default async function handler(
             }
           });
 
-          // Slackにモーダルを閉じるレスポンスを返す
-          res.status(200).send({});
+          try {
+            await Promise.all(tasks);
+            // Slackにモーダルを閉じるレスポンスを返す
+            res.status(200).send({});
+          } catch (error) {
+            console.error('task実行時にエラーが発生しました:' + error);
+          }
         } catch (error) {
           console.error(error);
 
