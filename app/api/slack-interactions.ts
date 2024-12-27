@@ -67,12 +67,7 @@ export default async function handler(
             user: user.id,
             text: responseText,
           });
-        } else if (
-          selectedAction === '本社勤務' ||
-          selectedAction === '在宅勤務' ||
-          selectedAction === '外出中' ||
-          selectedAction == '退勤'
-        ) {
+        } else if (Object.keys(actionEmojis).includes(selectedAction)) {
           // ユーザトークンを取得
           const userToken =
             (await getTokenByUserId(user.name)) || process.env.SLACK_TOKEN;
@@ -192,11 +187,13 @@ export default async function handler(
           }
 
           // モーダルを表示
-          await botClient.views.open({
-            trigger_id: trigger_id,
-            view: createModal(filteredMembers),
-          });
+          // await botClient.views.open({
+          //   trigger_id: trigger_id,
+          //   view: createModal(filteredMembers),
+          // });
+          const modal = await createModal(members, channel, prisma);
         }
+
         res.status(200).send('Status updated');
       } else {
         try {
@@ -416,28 +413,56 @@ const getTodayAt8PMJST = (): number => {
 };
 
 // モーダルを作成する関数
-const createModal = (members: string[]) => {
+const createModal = async (members: string[], channel: string, prisma: any) => {
+  // ステータス情報を取得
+  const existingRecord = await prisma.record.findFirst({
+    where: {
+      ymd: await getFormattedDate(),
+      channel_id: channel,
+    },
+  });
+
+  // メンバーを分類するためのマップを用意
+  const statusMap: { [key: string]: string[] } = {
+    本社勤務: [],
+    在宅勤務: [],
+    外出中: [],
+    リモート室: [],
+    休暇: [],
+  };
+
+  // メンバーをステータスごとに分類
+  members.forEach((member) => {
+    const status = existingRecord?.[member] || '休暇'; // ステータスが無い場合は "休暇"
+    if (!statusMap[status]) {
+      statusMap[status] = [];
+    }
+    statusMap[status].push(member);
+  });
+
+  // 各ステータスのリストをモーダルのテキストとして生成
+  const statusSections = Object.keys(statusMap).map((status) => ({
+    type: 'section',
+    text: {
+      type: 'mrkdwn' as const,
+      text: `*${status}*\n${
+        statusMap[status].map((member) => `<@${member}>`).join('\n') || 'なし'
+      }`,
+    },
+  }));
+
+  // モーダルデータ
   return {
-    type: 'modal' as const, // 'modal' を明示的にリテラル型として指定
+    type: 'modal' as const,
     title: {
-      type: 'plain_text' as const, // "plain_text"をリテラル型として指定
+      type: 'plain_text' as const,
       text: 'チャンネルメンバー',
     },
     close: {
       type: 'plain_text' as const,
       text: '閉じる',
     },
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: members
-            .map((member, index) => `${index + 1}. <@${member}>`)
-            .join('\n'),
-        },
-      },
-    ],
+    blocks: statusSections,
   };
 };
 
