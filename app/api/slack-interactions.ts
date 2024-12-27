@@ -193,42 +193,50 @@ export default async function handler(
         }
         res.status(200).send('Status updated');
       } else {
-        try {
-          // モーダルから入力された値を取得
-          const token =
-            parsedBody.view.state.values.token_block.token_input.value;
-          console.log('token:' + token + ' user:' + user.name);
+        if (parsedBody.action_id === 'button_add') {
+          try {
+            // モーダルから入力された値を取得
+            const token =
+              parsedBody.view.state.values.token_block.token_input.value;
+            console.log('token:' + token + ' user:' + user.name);
 
-          // private_metadata を取得
-          const privateMetadata = JSON.parse(parsedBody.view.private_metadata);
-          const channelId = privateMetadata.channel_id; // channel_id を取り出す
-          console.log('channelId:' + channelId);
+            // private_metadata を取得
+            const privateMetadata = JSON.parse(
+              parsedBody.view.private_metadata
+            );
+            const channelId = privateMetadata.channel_id; // channel_id を取り出す
+            console.log('channelId:' + channelId);
 
-          const result = await insertToken(user.name, token);
+            const result = await insertToken(user.name, token);
 
-          // ユーザがトークンを取得していない場合ステータス変更なし
-          let responseText = result
-            ? 'OA認証が成功しました😊'
-            : '問題が発生しました。\n管理者へお問い合わせください。';
+            // ユーザがトークンを取得していない場合ステータス変更なし
+            let responseText = result
+              ? 'OA認証が成功しました😊'
+              : '問題が発生しました。\n管理者へお問い合わせください。';
 
-          await botClient.chat.postEphemeral({
-            channel: channelId,
-            user: user.id,
-            text: responseText,
-          });
+            await botClient.chat.postEphemeral({
+              channel: channelId,
+              user: user.id,
+              text: responseText,
+            });
 
-          // Slackにモーダルを閉じるレスポンスを返す
-          res.status(200).send({});
-        } catch (error) {
-          console.error(error);
+            // Slackにモーダルを閉じるレスポンスを返す
+            res.status(200).send({});
+          } catch (error) {
+            console.error(error);
 
-          // モーダルを閉じずにエラーを返したい場合の例
-          res.status(400).send({
-            response_action: 'errors',
-            errors: {
-              token_block: 'トークンの保存に失敗しました。再度試してください。',
-            },
-          });
+            // モーダルを閉じずにエラーを返したい場合の例
+            res.status(400).send({
+              response_action: 'errors',
+              errors: {
+                token_block:
+                  'トークンの保存に失敗しました。再度試してください。',
+              },
+            });
+          }
+        } else if (parsedBody.action_id === 'button_none') {
+          console.log('OK! Do not forever.');
+          res.status(200).send('OK');
         }
       }
     } catch (error) {
