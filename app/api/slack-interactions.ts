@@ -43,7 +43,7 @@ export default async function handler(
           // ユーザトークンを取得
           const defaultUserToken = process.env.SLACK_TOKEN;
           const userToken =
-            (await getTokenByUserId(user.id)) || process.env.SLACK_TOKEN;
+            (await getTokenByUserId(user.name)) || process.env.SLACK_TOKEN;
           const userClient = new WebClient(userToken);
           let isStatus = defaultUserToken === userToken;
           console.log('userToken:' + userToken);
