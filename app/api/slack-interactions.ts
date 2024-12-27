@@ -30,6 +30,18 @@ export default async function handler(
 
       console.log('parsedBody:', JSON.stringify(parsedBody, null, 2));
 
+      // actionと絵文字の紐づけ
+      type ActionEmojiMap = {
+        [key: string]: string;
+      };
+      const actionEmojis: ActionEmojiMap = {
+        本社勤務: ':office:',
+        在宅勤務: ':house_with_garden:',
+        外出中: ':car:',
+        リモート室: ':desktop_computer:',
+        退勤: '', // 空文字列
+      };
+
       if (actions && actions.length > 0) {
         const tasks = [];
 
@@ -93,37 +105,34 @@ export default async function handler(
 
           if (isUser === 1) {
             // Statusに反映する絵文字をセット
-            let emoji = '';
-            let timestamp = 0;
+            // let emoji = '';
+            // let timestamp = 0;
 
-            switch (selectedAction) {
-              case '本社勤務':
-                emoji = ':office:';
-                break;
-              case '在宅勤務':
-                emoji = ':house_with_garden:';
-                break;
-              case '外出中':
-                emoji = ':car:';
-                break;
-              case 'リモート室':
-                emoji = ':desktop_computer:';
-                break;
-              case '退勤':
-                selectedAction = '';
-                break;
-            }
-
-            // 20:00までのタイムスタンプを取得
-            timestamp = getTodayAt8PMJST();
+            // switch (selectedAction) {
+            //   case '本社勤務':
+            //     emoji = ':office:';
+            //     break;
+            //   case '在宅勤務':
+            //     emoji = ':house_with_garden:';
+            //     break;
+            //   case '外出中':
+            //     emoji = ':car:';
+            //     break;
+            //   case 'リモート室':
+            //     emoji = ':desktop_computer:';
+            //     break;
+            //   case '退勤':
+            //     selectedAction = '';
+            //     break;
+            // }
 
             // Statusを更新
             await updateUserStatus(
               userClient,
               user.id,
               selectedAction,
-              emoji,
-              timestamp
+              actionEmojis[selectedAction],
+              getTodayAt8PMJST()
             );
           } else if (isUser === 2) {
             // ユーザがトークンを取得していない場合ステータス変更なし
@@ -172,17 +181,10 @@ export default async function handler(
 
           tasks.push(
             (async () => {
-              const ymd = new Date();
-              // 日本時間に合わせる（UTC + 9 時間）
-              ymd.setHours(ymd.getHours() + 9);
-
-              // 日付部分だけを取得（"YYYY-MM-DD"）
-              const formattedDate = ymd.toISOString().split('T')[0].toString();
-
               // Recordを更新
               await upsertRecord(
                 user.name,
-                formattedDate,
+                await getFormattedDate(),
                 channel.id,
                 selectedAction
               );
@@ -220,6 +222,7 @@ export default async function handler(
         res.status(200).send('Status updated');
       } else {
         try {
+          const tasks = [];
           // モーダルから入力された値を取得
           const token =
             parsedBody.view.state.values.token_block.token_input.value;
@@ -232,15 +235,40 @@ export default async function handler(
 
           const result = await insertToken(user.name, token);
 
-          // ユーザがトークンを取得していない場合ステータス変更なし
-          let responseText = result
-            ? 'OA認証が成功しました😊'
-            : '問題が発生しました。\n管理者へお問い合わせください。';
+          tasks.push(async () => {
+            // ユーザがトークンを取得していない場合ステータス変更なし
+            let responseText = result
+              ? 'OA認証が成功しました😊'
+              : '問題が発生しました。\n管理者へお問い合わせください。';
 
-          await botClient.chat.postEphemeral({
-            channel: channelId,
-            user: user.id,
-            text: responseText,
+            await botClient.chat.postEphemeral({
+              channel: channelId,
+              user: user.id,
+              text: responseText,
+            });
+          });
+
+          tasks.push(async () => {
+            const existingRecord = await prisma.record.findFirst({
+              where: {
+                user_id: user.name,
+                ymd: await getFormattedDate(),
+                channel_id: channelId,
+              },
+            });
+            if (existingRecord) {
+              const userClient = new WebClient(token);
+              // Statusを更新
+              await updateUserStatus(
+                userClient,
+                user.id,
+                existingRecord.selected_status,
+                actionEmojis[existingRecord.selected_status],
+                getTodayAt8PMJST()
+              );
+            } else {
+              console.log('Statsu chnage failed');
+            }
           });
 
           // Slackにモーダルを閉じるレスポンスを返す
@@ -368,6 +396,13 @@ async function insertToken(
   }
 }
 
+async function getFormattedDate() {
+  const ymd = new Date();
+  // 日本時間に合わせる（UTC + 9 時間）
+  ymd.setHours(ymd.getHours() + 9);
+
+  return ymd.toISOString().split('T')[0].toString() || '';
+}
 // ユーザの表示名を取得する関数
 export async function getUserName(
   userClient: WebClient,
