@@ -34,7 +34,7 @@ export default async function handler(
         let selectedAction = actions[0].value;
         console.log('selectedAction:' + selectedAction);
 
-        console.log(JSON.stringify(message, null, 2));
+        // console.log(JSON.stringify(message, null, 2));
 
         if (selectedAction === 'OA認証') {
           // モーダルウィンドウを開く
@@ -51,6 +51,17 @@ export default async function handler(
           console.log('userClient:' + userClient);
           const isUser: boolean = userToken === process.env.SLACK_TOKEN;
           console.log('isUser:' + isUser);
+
+          tasks.push(
+            (async () => {
+              const userName = await getUserName(userClient, user.id);
+              return botClient.chat.postMessage({
+                channel: channel.id,
+                thread_ts: message.ts,
+                text: `${userName}さんが${selectedAction}を選択しました！`,
+              });
+            })()
+          );
 
           if (!isUser) {
             // Statusに反映する絵文字をセット
@@ -133,17 +144,6 @@ export default async function handler(
 
           tasks.push(
             (async () => {
-              const userName = await getUserName(userClient, user.id);
-              return botClient.chat.postMessage({
-                channel: channel.id,
-                thread_ts: message.ts,
-                text: `${userName}さんが${selectedAction}を選択しました！`,
-              });
-            })()
-          );
-
-          tasks.push(
-            (async () => {
               const ymd = new Date();
               // 日本時間に合わせる（UTC + 9 時間）
               ymd.setHours(ymd.getHours() + 9);
@@ -208,16 +208,25 @@ export default async function handler(
           let responseText = result
             ? 'OA認証が成功しました😊'
             : '問題が発生しました。\n管理者へお問い合わせください。';
+
           await botClient.chat.postEphemeral({
             channel: channelId,
             user: user.id,
             text: responseText,
           });
 
-          res.status(200).send('Token updated');
+          // Slackにモーダルを閉じるレスポンスを返す
+          res.status(200).send({});
         } catch (error) {
           console.error(error);
-          res.status(400).send('No actions found');
+
+          // モーダルを閉じずにエラーを返したい場合の例
+          res.status(400).send({
+            response_action: 'errors',
+            errors: {
+              token_block: 'トークンの保存に失敗しました。再度試してください。',
+            },
+          });
         }
       }
     } catch (error) {
@@ -412,7 +421,7 @@ const createUserModal = (user_id: string, channel_id: string): ModalView => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `①URLをCクリック https://api.slack.com/apps/A085S81KVAS/oauth? \n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
+          text: `①URLをクリック https://api.slack.com/apps/A085S81KVAS/oauth? \n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
         },
       },
       {
