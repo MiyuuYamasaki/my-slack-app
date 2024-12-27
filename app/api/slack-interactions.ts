@@ -34,7 +34,6 @@ export default async function handler(
         let selectedAction = actions[0].value;
         console.log('selectedAction:' + selectedAction);
 
-        const message = parsedBody.payload.message;
         console.log(JSON.stringify(message, null, 2));
 
         if (selectedAction === 'OA認証') {
