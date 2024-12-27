@@ -41,80 +41,17 @@ export default async function handler(
           });
         } else if (selectedAction != undefined) {
           // ユーザトークンを取得
-          const defaultUserToken = process.env.SLACK_TOKEN;
           const userToken =
             (await getTokenByUserId(user.name)) || process.env.SLACK_TOKEN;
           const userClient = new WebClient(userToken);
+          console.log('userToken:' + userToken);
+          console.log('userClient:' + userClient);
 
           // ユーザー認証テスト
           try {
             const authTest = await userClient.auth.test();
             console.log('Auth Test Result:', authTest);
-          } catch (error) {
-            console.error('Token is invalid or expired:', error);
-          }
 
-          let isStatus = defaultUserToken === userToken;
-          console.log('userToken:' + userToken);
-
-          // ユーザがトークンを取得していない場合ステータス変更なし
-          if (isStatus) {
-            let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
-            botClient.chat.postEphemeral({
-              channel: channel.id,
-              user: user.id,
-              text: responseText,
-              blocks: [
-                {
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: responseText,
-                  },
-                },
-                {
-                  type: 'actions',
-                  elements: [
-                    {
-                      type: 'button',
-                      text: {
-                        type: 'plain_text',
-                        text: '認証',
-                        emoji: true,
-                      },
-                      action_id: 'button_add',
-                      style: 'primary',
-                      value: 'OA認証',
-                    },
-                    {
-                      type: 'button',
-                      text: {
-                        type: 'plain_text',
-                        text: '今後表示しない',
-                        emoji: true,
-                      },
-                      action_id: 'button_none',
-                      value: 'NONE',
-                    },
-                  ],
-                },
-              ],
-            });
-          }
-
-          tasks.push(
-            (async () => {
-              const userName = await getUserName(userClient, user.id);
-              return botClient.chat.postMessage({
-                channel: channel.id,
-                thread_ts: message.ts,
-                text: `${userName}さんが${selectedAction}を選択しました！`,
-              });
-            })()
-          );
-
-          // TOKENがない場合ステータス変更なし。
-          if (!isStatus) {
             // Statusに反映する絵文字をセット
             let emoji = '';
             let timestamp = 0;
@@ -152,7 +89,64 @@ export default async function handler(
                 );
               })()
             );
+          } catch (error) {
+            // ユーザがトークンを取得していない場合ステータス変更なし
+            tasks.push(async () => {
+              let responseText = `OA認証されていないため、ステータス変更ができません。\nOA認証を行いますか？`;
+              botClient.chat.postEphemeral({
+                channel: channel.id,
+                user: user.id,
+                text: responseText,
+                blocks: [
+                  {
+                    type: 'section',
+                    text: {
+                      type: 'mrkdwn',
+                      text: responseText,
+                    },
+                  },
+                  {
+                    type: 'actions',
+                    elements: [
+                      {
+                        type: 'button',
+                        text: {
+                          type: 'plain_text',
+                          text: '認証',
+                          emoji: true,
+                        },
+                        action_id: 'button_add',
+                        style: 'primary',
+                        value: 'OA認証',
+                      },
+                      {
+                        type: 'button',
+                        text: {
+                          type: 'plain_text',
+                          text: '今後表示しない',
+                          emoji: true,
+                        },
+                        action_id: 'button_none',
+                        value: 'NONE',
+                      },
+                    ],
+                  },
+                ],
+              });
+            });
+            console.error('Token is invalid or expired:', error);
           }
+
+          tasks.push(
+            (async () => {
+              const userName = await getUserName(userClient, user.id);
+              return botClient.chat.postMessage({
+                channel: channel.id,
+                thread_ts: message.ts,
+                text: `${userName}さんが${selectedAction}を選択しました！`,
+              });
+            })()
+          );
 
           tasks.push(
             (async () => {
