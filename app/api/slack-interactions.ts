@@ -206,6 +206,10 @@ export default async function handler(
           console.log('token:' + token + ' user:' + user.name);
           const result = await insertToken(user.name, token);
 
+          console.log('parsedBody:', parsedBody);
+          console.log('channel:', parsedBody.channel);
+          console.log('message:', parsedBody.message);
+
           // 成功ならTOKEN追加のメッセージを削除
           if (result) {
             if (!channel?.id || !message?.ts) {
