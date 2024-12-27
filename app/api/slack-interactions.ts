@@ -46,12 +46,14 @@ export default async function handler(
           });
         } else if (selectedAction === 'NONE') {
           console.log('OK! Do not forever.');
-          await insertToken(user.name, 'Not required');
-
+          const result = await insertToken(user.name, 'Not required');
+          const responseText = result
+            ? 'OK! 今後は表示しません。\n必要になった場合は、管理者へお問い合わせください。'
+            : '既にOA認証済みではないですか？\n認証の覚えがない場合、管理者へお問い合わせください。';
           await botClient.chat.postEphemeral({
             channel: channel.id,
             user: user.id,
-            text: 'OK! 今後は表示しません。\n必要になった場合は、管理者へお問い合わせください。',
+            text: responseText,
           });
         } else if (
           selectedAction === '本社勤務' ||
