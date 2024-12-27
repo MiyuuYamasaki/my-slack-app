@@ -46,6 +46,7 @@ export default async function handler(
             (await getTokenByUserId(user.id)) || process.env.SLACK_TOKEN;
           const userClient = new WebClient(userToken);
           let isStatus = defaultUserToken === userToken;
+          console.log('userToken:' + userToken);
 
           // ユーザがトークンを取得していない場合ステータス変更なし
           if (isStatus) {
@@ -235,6 +236,8 @@ async function getTokenByUserId(userId: string) {
     },
   });
 
+  console.log('userRecord:', JSON.stringify(userRecord, null, 2));
+
   return userRecord ? userRecord.token : process.env.SLACK_TOKEN;
 }
 
@@ -280,7 +283,7 @@ async function upsertRecord(
       },
     });
 
-    console.log('existingRecord:' + existingRecord);
+    console.log('existingRecord:', JSON.stringify(existingRecord, null, 2));
 
     if (!existingRecord) {
       // レコードが存在しない場合、作成
