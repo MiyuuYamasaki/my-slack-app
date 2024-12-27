@@ -34,11 +34,14 @@ export default async function handler(
         let selectedAction = actions[0].value;
         console.log('selectedAction:' + selectedAction);
 
+        const message = parsedBody.payload.message;
+        console.log(JSON.stringify(message, null, 2));
+
         if (selectedAction === 'OA認証') {
           // モーダルウィンドウを開く
           await botClient.views.open({
             trigger_id: trigger_id,
-            view: createUserModal(user.name, channel.id, message.ts),
+            view: createUserModal(user.name, channel.id),
           });
         } else if (selectedAction != undefined) {
           // ユーザトークンを取得
@@ -402,18 +405,14 @@ const createModal = (members: string[]) => {
 };
 
 // OA認証用のモーダルを作成する関数
-const createUserModal = (
-  user_id: string,
-  channelId: string,
-  messageTs: string
-): ModalView => {
+const createUserModal = (user_id: string, channel_id: string): ModalView => {
   // ユーザーの場合のモーダル
   return {
     type: 'modal',
     callback_id: 'modal_oa_auth',
     private_metadata: JSON.stringify({
-      channel_id: channelId,
-      message_ts: messageTs,
+      channel_id: channel_id,
+      user_id: user_id,
     }),
     title: {
       type: 'plain_text',
