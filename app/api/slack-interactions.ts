@@ -82,7 +82,7 @@ export default async function handler(
                 // Statusを更新
                 await updateUserStatus(
                   userClient,
-                  user.name,
+                  user.id,
                   selectedAction,
                   emoji,
                   timestamp
