@@ -184,7 +184,7 @@ export default async function handler(
             if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
               filteredMembers.push(userInfo.user?.name || 'ERROR');
             }
-            console.log(userInfo.user?.name);
+            console.log(filteredMembers);
           }
 
           console.log('start createModal');
