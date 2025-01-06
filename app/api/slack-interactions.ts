@@ -415,15 +415,6 @@ const getTodayAt8PMJST = (): number => {
 
 // モーダルを作成する関数
 const createModal = async (members: string[], channel: string, prisma: any) => {
-  // ステータス情報を取得
-  // const existingRecord = await prisma.record.findFirst({
-  //   where: {
-  //     ymd: await getFormattedDate(),
-  //     channel_id: channel,
-  //   },
-  // });
-  // console.log(existingRecord);
-
   // メンバーを分類するためのマップを用意
   const statusMap: { [key: string]: string[] } = {
     本社勤務: [],
@@ -433,6 +424,8 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
     休暇: [],
   };
 
+  const ymd = await getFormattedDate();
+
   // メンバーをステータスごとに分類
   members.forEach((member) => {
     // console.log('status:' + existingRecord?.[member]);
@@ -440,7 +433,7 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
 
     const existingRecord = prisma.record.findUnique({
       where: {
-        ymd: getFormattedDate(),
+        ymd: ymd,
         channel_id: channel,
         user_id: member,
       },
