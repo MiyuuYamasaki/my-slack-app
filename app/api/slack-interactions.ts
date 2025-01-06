@@ -438,7 +438,7 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
     // console.log('status:' + existingRecord?.[member]);
     // const status = existingRecord?.[member] || '休暇'; // ステータスが無い場合は "休暇"
 
-    const existingRecord = prisma.record.findMany({
+    const existingRecord = prisma.record.findUnique({
       where: {
         ymd: getFormattedDate(),
         channel_id: channel,
