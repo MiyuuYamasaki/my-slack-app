@@ -424,21 +424,14 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
     休暇: [],
   };
 
-  const ymd = await getFormattedDate();
-
-  // メンバーをステータスごとに分類
-  members.forEach((member) => {
-    // console.log('status:' + existingRecord?.[member]);
-    // const status = existingRecord?.[member] || '休暇'; // ステータスが無い場合は "休暇"
-
-    const existingRecord = prisma.record.findUnique({
+  for (const member of members) {
+    const existingRecord = await prisma.record.findUnique({
       where: {
-        ymd: ymd,
+        ymd: await getFormattedDate(),
         channel_id: channel,
         user_id: member,
       },
     });
-
     console.log(existingRecord);
 
     const status = existingRecord?.selected_status || '休暇'; // ステータスが無い場合は "休暇"
@@ -448,7 +441,7 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
     statusMap[status].push(member);
 
     console.log('status:' + status);
-  });
+  }
 
   // 各ステータスのリストをモーダルのテキストとして生成
   const statusSections = Object.keys(statusMap).map((status) => ({
