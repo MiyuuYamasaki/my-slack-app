@@ -184,9 +184,9 @@ export default async function handler(
             if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
               filteredMembers.push(memberId);
             }
+            console.log(userInfo);
           }
 
-          console.log(filteredMembers);
           console.log('start createModal');
           // モーダルを表示
           await botClient.views.open({
