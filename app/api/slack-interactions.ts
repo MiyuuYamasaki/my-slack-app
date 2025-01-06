@@ -186,12 +186,12 @@ export default async function handler(
             }
           }
 
-          console.log(members);
+          console.log(filteredMembers);
           console.log('start createModal');
           // モーダルを表示
           await botClient.views.open({
             trigger_id: trigger_id,
-            view: await createModal(members, channel.id, prisma),
+            view: await createModal(filteredMembers, channel.id, prisma),
           });
         }
 
