@@ -182,9 +182,9 @@ export default async function handler(
           for (const memberId of members) {
             const userInfo = await botClient.users.info({ user: memberId });
             if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
-              filteredMembers.push(memberId);
+              filteredMembers.push(userInfo.user?.name || 'ERROR');
             }
-            console.log(userInfo);
+            console.log(userInfo.user?.name);
           }
 
           console.log('start createModal');
