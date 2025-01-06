@@ -186,12 +186,13 @@ export default async function handler(
             }
           }
 
+          console.log(members);
+          console.log('start createModal');
           // モーダルを表示
-          // await botClient.views.open({
-          //   trigger_id: trigger_id,
-          //   view: createModal(filteredMembers),
-          // });
-          const modal = await createModal(members, channel.id, prisma);
+          await botClient.views.open({
+            trigger_id: trigger_id,
+            view: await createModal(members, channel.id, prisma),
+          });
         }
 
         res.status(200).send('Status updated');
