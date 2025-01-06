@@ -470,7 +470,7 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
     type: 'modal' as const,
     title: {
       type: 'plain_text' as const,
-      text: 'チャンネルメンバー',
+      text: 'チャンネルメンバー 一覧',
     },
     close: {
       type: 'plain_text' as const,
@@ -498,7 +498,7 @@ const createUserModal = (user_id: string, channel_id: string): ModalView => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `①URLをクリック https://api.slack.com/apps/A085S81KVAS/oauth? \n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③User OAuth Tokenをコピーして貼り付け！`,
+          text: `①URLをクリック https://api.slack.com/apps/A085S81KVAS/oauth? \n②OAuth Tokensの「install to SBS-OCC」をClickして認証\n③認証成功後、User OAuth Token（xoxp～）をコピーして貼り付け！`,
         },
       },
       {
