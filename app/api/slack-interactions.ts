@@ -425,9 +425,17 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
   };
 
   const ymd = await getFormattedDate();
+  const record = await prisma.record.findFirst({
+    where: {
+      ymd: ymd,
+      channel_id: channel,
+    },
+  });
+
+  console.log(record);
 
   for (const member of members) {
-    const existingRecord = await prisma.record.findUnique({
+    const existingRecord = await prisma.record.findFirst({
       where: {
         ymd: ymd,
         channel_id: channel,
