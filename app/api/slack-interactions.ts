@@ -191,7 +191,7 @@ export default async function handler(
           //   trigger_id: trigger_id,
           //   view: createModal(filteredMembers),
           // });
-          const modal = await createModal(members, channel, prisma);
+          const modal = await createModal(members, channel.id, prisma);
         }
 
         res.status(200).send('Status updated');
