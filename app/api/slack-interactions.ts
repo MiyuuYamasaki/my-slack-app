@@ -416,13 +416,13 @@ const getTodayAt8PMJST = (): number => {
 // モーダルを作成する関数
 const createModal = async (members: string[], channel: string, prisma: any) => {
   // ステータス情報を取得
-  const existingRecord = await prisma.record.findFirst({
-    where: {
-      ymd: await getFormattedDate(),
-      channel_id: channel,
-    },
-  });
-  console.log(existingRecord);
+  // const existingRecord = await prisma.record.findFirst({
+  //   where: {
+  //     ymd: await getFormattedDate(),
+  //     channel_id: channel,
+  //   },
+  // });
+  // console.log(existingRecord);
 
   // メンバーを分類するためのマップを用意
   const statusMap: { [key: string]: string[] } = {
@@ -435,12 +435,26 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
 
   // メンバーをステータスごとに分類
   members.forEach((member) => {
-    console.log('status:' + existingRecord?.[member]);
-    const status = existingRecord?.[member] || '休暇'; // ステータスが無い場合は "休暇"
+    // console.log('status:' + existingRecord?.[member]);
+    // const status = existingRecord?.[member] || '休暇'; // ステータスが無い場合は "休暇"
+
+    const existingRecord = prisma.record.find({
+      where: {
+        ymd: getFormattedDate(),
+        channel_id: channel,
+        user_id: member,
+      },
+    });
+
+    console.log(existingRecord);
+
+    const status = existingRecord?.selected_status || '休暇'; // ステータスが無い場合は "休暇"
     if (!statusMap[status]) {
       statusMap[status] = [];
     }
     statusMap[status].push(member);
+
+    console.log('status:' + status);
   });
 
   // 各ステータスのリストをモーダルのテキストとして生成
