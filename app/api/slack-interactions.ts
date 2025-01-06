@@ -186,8 +186,8 @@ export default async function handler(
             }
           }
 
+          console.log('▼ start createModal');
           console.log(filteredMembers);
-          console.log('start createModal');
           // モーダルを表示
           await botClient.views.open({
             trigger_id: trigger_id,
@@ -435,6 +435,7 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
 
   // メンバーをステータスごとに分類
   members.forEach((member) => {
+    console.log('status:' + existingRecord?.[member]);
     const status = existingRecord?.[member] || '休暇'; // ステータスが無い場合は "休暇"
     if (!statusMap[status]) {
       statusMap[status] = [];
