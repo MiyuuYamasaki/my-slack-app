@@ -184,9 +184,9 @@ export default async function handler(
             if (!userInfo.user?.is_bot && userInfo.user?.id !== 'USLACKBOT') {
               filteredMembers.push(userInfo.user?.name || 'ERROR');
             }
-            console.log(filteredMembers);
           }
 
+          console.log(filteredMembers);
           console.log('start createModal');
           // モーダルを表示
           await botClient.views.open({
@@ -422,6 +422,7 @@ const createModal = async (members: string[], channel: string, prisma: any) => {
       channel_id: channel,
     },
   });
+  console.log(existingRecord);
 
   // メンバーを分類するためのマップを用意
   const statusMap: { [key: string]: string[] } = {
