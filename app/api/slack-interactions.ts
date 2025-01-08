@@ -69,22 +69,19 @@ export default async function handler(
           });
         } else if (Object.keys(actionEmojis).includes(selectedAction)) {
           // ユーザトークンを取得
-          const userToken =
-            (await getTokenByUserId(user.name)) || process.env.SLACK_TOKEN;
-          console.log('userToken:' + userToken);
+          const userToken = (await getTokenByUserId(user.name)) || botToken;
 
           let isUser: number;
           if (userToken === 'Not required') {
             isUser = 0; // OA認証表示なし && ステータス変更なし
-          } else if (userToken != process.env.SLACK_TOKEN) {
+          } else if (userToken != botToken) {
             isUser = 1; // ステータス変更あり
           } else {
             isUser = 2; // OA認証表示あり
           }
-          console.log('isUser:' + isUser);
 
           const userClient = new WebClient(
-            userToken != 'Not required' ? userToken : process.env.SLACK_TOKEN
+            userToken != 'Not required' ? userToken : botToken
           );
 
           tasks.push(
@@ -279,7 +276,7 @@ async function getTokenByUserId(userId: string) {
 
   console.log('userRecord:', JSON.stringify(userRecord, null, 2));
 
-  return userRecord ? userRecord.token : process.env.SLACK_TOKEN;
+  return userRecord ? userRecord.token : botToken;
 }
 
 // ユーザーのステータスを更新する関数
@@ -417,11 +414,11 @@ const getTodayAt8PMJST = (): number => {
 const createModal = async (members: string[], channel: string, prisma: any) => {
   // メンバーを分類するためのマップを用意
   const statusMap: { [key: string]: string[] } = {
-    本社勤務: [],
-    在宅勤務: [],
-    外出中: [],
-    リモート室: [],
-    休暇: [],
+    // 本社勤務: [],
+    // 在宅勤務: [],
+    // 外出中: [],
+    // リモート室: [],
+    // 休暇: [],
   };
 
   const ymd = await getFormattedDate();
